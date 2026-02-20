@@ -152,7 +152,7 @@ export default function Sidebar() {
             aria-label="Zatvori izbornik"
           />
 
-          <aside className="relative h-full w-[82vw] max-w-[320px] bg-white dark:bg-[#05182d] border-r border-gray-200 dark:border-brand-navy shadow-2xl flex flex-col">
+          <aside className="absolute right-0 top-0 h-full w-[82vw] max-w-[320px] bg-white dark:bg-[#05182d] border-l border-gray-200 dark:border-brand-navy shadow-2xl flex flex-col">
             <div className="px-4 py-4 border-b border-gray-100 dark:border-gray-800/50 flex items-center justify-between">
               {renderLogo(false, true)}
               <button
