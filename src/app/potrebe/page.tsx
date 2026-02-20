@@ -5,13 +5,28 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { Briefcase, Building2, Users, ArrowRight } from 'lucide-react';
 
+interface KlijentRef {
+  id: string;
+  naziv_tvrtke: string;
+  skraceni_naziv: string | null;
+}
+
 interface PozicijaItem {
   id: string;
   naziv_pozicije: string;
   broj_izvrsitelja: number;
   cijena_po_kandidatu: number;
   status: string | null;
-  klijenti: { id: string; naziv_tvrtke: string; skraceni_naziv: string | null } | null;
+  klijenti: KlijentRef | null;
+}
+
+interface SupabasePozicijaItem {
+  id: string;
+  naziv_pozicije: string;
+  broj_izvrsitelja: number;
+  cijena_po_kandidatu: number;
+  status: string | null;
+  klijenti: KlijentRef | KlijentRef[] | null;
 }
 
 interface GrupiranaPotreba {
@@ -54,7 +69,12 @@ export default function PotrebePage() {
         return;
       }
 
-      setPozicije((data || []) as PozicijaItem[]);
+      const normalizirano = ((data || []) as SupabasePozicijaItem[]).map<PozicijaItem>((pozicija) => ({
+        ...pozicija,
+        klijenti: Array.isArray(pozicija.klijenti) ? pozicija.klijenti[0] || null : pozicija.klijenti || null,
+      }));
+
+      setPozicije(normalizirano);
       setUcitavanje(false);
     };
 

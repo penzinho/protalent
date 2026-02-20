@@ -20,6 +20,16 @@ interface PozicijaRef {
   klijenti: KlijentRef | null;
 }
 
+interface SupabasePozicijaRef {
+  id: string;
+  naziv_pozicije: string;
+  broj_izvrsitelja: number;
+  cijena_po_kandidatu: number;
+  status: string | null;
+  datum_upisa: string;
+  klijenti: KlijentRef | KlijentRef[] | null;
+}
+
 interface ZaposleniKandidat {
   id: string;
   ime_prezime: string;
@@ -27,6 +37,15 @@ interface ZaposleniKandidat {
   datum_slanja: string;
   pozicija_id: string;
   pozicije: PozicijaRef | null;
+}
+
+interface SupabaseZaposleniKandidat {
+  id: string;
+  ime_prezime: string;
+  status: string;
+  datum_slanja: string;
+  pozicija_id: string;
+  pozicije: SupabasePozicijaRef | SupabasePozicijaRef[] | null;
 }
 
 const formatirajDatum = (datumString: string) => {
@@ -46,6 +65,16 @@ const godinaIzDatuma = (datumString?: string | null) => {
   if (Number.isNaN(datum.getTime())) return null;
   return datum.getFullYear();
 };
+
+const normalizirajKlijenta = (klijent: KlijentRef | KlijentRef[] | null): KlijentRef | null => {
+  if (!klijent) return null;
+  return Array.isArray(klijent) ? klijent[0] || null : klijent;
+};
+
+const normalizirajPoziciju = (pozicija: SupabasePozicijaRef): PozicijaRef => ({
+  ...pozicija,
+  klijenti: normalizirajKlijenta(pozicija.klijenti),
+});
 
 export default function PrihodiPage() {
   const tekucaGodina = new Date().getFullYear();
@@ -88,8 +117,23 @@ export default function PrihodiPage() {
         return;
       }
 
-      setZaposleniKandidati((kandidatiRes.data || []) as ZaposleniKandidat[]);
-      setOtvorenePozicije((pozicijeRes.data || []) as PozicijaRef[]);
+      const normaliziraniKandidati = ((kandidatiRes.data || []) as SupabaseZaposleniKandidat[]).map<ZaposleniKandidat>(
+        (kandidat) => {
+          const rawPozicija = Array.isArray(kandidat.pozicije) ? kandidat.pozicije[0] : kandidat.pozicije;
+
+          return {
+            ...kandidat,
+            pozicije: rawPozicija ? normalizirajPoziciju(rawPozicija) : null,
+          };
+        }
+      );
+
+      const normaliziranePozicije = ((pozicijeRes.data || []) as SupabasePozicijaRef[]).map<PozicijaRef>(
+        (pozicija) => normalizirajPoziciju(pozicija)
+      );
+
+      setZaposleniKandidati(normaliziraniKandidati);
+      setOtvorenePozicije(normaliziranePozicije);
       setUcitavanje(false);
     };
 

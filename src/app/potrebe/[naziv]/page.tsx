@@ -6,6 +6,12 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Building2, LayoutGrid, List, Users, Euro } from 'lucide-react';
 
+interface KlijentRef {
+  id: string;
+  naziv_tvrtke: string;
+  skraceni_naziv: string | null;
+}
+
 interface PozicijaDetalj {
   id: string;
   naziv_pozicije: string;
@@ -13,7 +19,17 @@ interface PozicijaDetalj {
   cijena_po_kandidatu: number;
   status: string | null;
   datum_upisa: string;
-  klijenti: { id: string; naziv_tvrtke: string; skraceni_naziv: string | null } | null;
+  klijenti: KlijentRef | null;
+}
+
+interface SupabasePozicijaDetalj {
+  id: string;
+  naziv_pozicije: string;
+  broj_izvrsitelja: number;
+  cijena_po_kandidatu: number;
+  status: string | null;
+  datum_upisa: string;
+  klijenti: KlijentRef | KlijentRef[] | null;
 }
 
 interface GrupiranoPoKlijentu {
@@ -75,7 +91,12 @@ export default function PotrebaDetaljiPage() {
         return;
       }
 
-      const filtrirano = ((data || []) as PozicijaDetalj[]).filter(
+      const normalizirano = ((data || []) as SupabasePozicijaDetalj[]).map<PozicijaDetalj>((pozicija) => ({
+        ...pozicija,
+        klijenti: Array.isArray(pozicija.klijenti) ? pozicija.klijenti[0] || null : pozicija.klijenti || null,
+      }));
+
+      const filtrirano = normalizirano.filter(
         (pozicija) =>
           normalizirajNaziv(pozicija.naziv_pozicije) === nazivKljuc &&
           (statusFilter === 'Zatvoreno'
