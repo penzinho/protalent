@@ -15,6 +15,8 @@ interface Klijent {
   ulica: string;
   grad: string;
   industrija: string;
+  brojPozicija: number;
+  brojKandidata: number;
 }
 
 export default function KlijentiPage() {
@@ -25,9 +27,55 @@ export default function KlijentiPage() {
 
   useEffect(() => {
     async function dohvatiKlijente() {
-      const { data, error } = await supabase.from('klijenti').select('*').order('created_at', { ascending: false });
-      if (error) console.error('Greška pri dohvaćanju:', error);
-      else setKlijenti(data || []);
+      const { data: klijentiData, error: klijentiError } = await supabase
+        .from('klijenti')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (klijentiError) {
+        console.error('Greška pri dohvaćanju klijenata:', klijentiError);
+        setKlijenti([]);
+        setUcitavanje(false);
+        return;
+      }
+
+      const { data: pozicijeData, error: pozicijeError } = await supabase
+        .from('pozicije')
+        .select('klijent_id, broj_izvrsitelja')
+        .eq('status', 'Otvoreno');
+
+      if (pozicijeError) {
+        console.error('Greška pri dohvaćanju pozicija:', pozicijeError);
+      }
+
+      const agregatiPoKlijentu = (pozicijeData || []).reduce<Record<string, { brojPozicija: number; brojKandidata: number }>>(
+        (acc, pozicija) => {
+          const klijentId = pozicija.klijent_id as string;
+          const brojIzvrsitelja = Number(pozicija.broj_izvrsitelja);
+
+          if (!acc[klijentId]) {
+            acc[klijentId] = { brojPozicija: 0, brojKandidata: 0 };
+          }
+
+          acc[klijentId].brojPozicija += 1;
+          acc[klijentId].brojKandidata += Number.isFinite(brojIzvrsitelja) ? brojIzvrsitelja : 0;
+
+          return acc;
+        },
+        {}
+      );
+
+      const obogaceniKlijenti: Klijent[] = (klijentiData || []).map((klijent) => {
+        const agregat = agregatiPoKlijentu[klijent.id] || { brojPozicija: 0, brojKandidata: 0 };
+
+        return {
+          ...klijent,
+          brojPozicija: agregat.brojPozicija,
+          brojKandidata: agregat.brojKandidata,
+        };
+      });
+
+      setKlijenti(obogaceniKlijenti);
       setUcitavanje(false);
     }
     dohvatiKlijente();
@@ -115,10 +163,14 @@ export default function KlijentiPage() {
                           </span>
                         </td>
                         <td className="py-4 px-6 text-center">
-                          <span className="text-gray-600 dark:text-gray-300 font-semibold bg-gray-100 dark:bg-[#05182d] border border-transparent dark:border-gray-700 px-3 py-1 rounded-lg">0</span>
+                          <span className="text-gray-600 dark:text-gray-300 font-semibold bg-gray-100 dark:bg-[#05182d] border border-transparent dark:border-gray-700 px-3 py-1 rounded-lg">
+                            {klijent.brojPozicija}
+                          </span>
                         </td>
                         <td className="py-4 px-6 text-center">
-                          <span className="text-gray-600 dark:text-gray-300 font-semibold bg-gray-100 dark:bg-[#05182d] border border-transparent dark:border-gray-700 px-3 py-1 rounded-lg">0</span>
+                          <span className="text-gray-600 dark:text-gray-300 font-semibold bg-gray-100 dark:bg-[#05182d] border border-transparent dark:border-gray-700 px-3 py-1 rounded-lg">
+                            {klijent.brojKandidata}
+                          </span>
                         </td>
                         <td className="py-4 px-6 text-right">
                           <Link 
