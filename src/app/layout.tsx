@@ -19,12 +19,14 @@ export default function RootLayout({
   return (
     <html lang="hr" suppressHydrationWarning>
       {/* Ovdje definiramo da je pozadina siva u svijetlom, a VAŠA PLAVA u tamnom modu */}
-      <body className={`${inter.className} flex min-h-screen bg-gray-50 dark:bg-brand-navy transition-colors duration-300`}>
+      <body className={`${inter.className} min-h-screen bg-gray-50 dark:bg-brand-navy transition-colors duration-300`}>
         <ThemeProvider>
-          <Sidebar />
-          <main className="flex-1 p-8 overflow-y-auto">
-            {children}
-          </main>
+          <div className="flex min-h-screen flex-col md:flex-row">
+            <Sidebar />
+            <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+              {children}
+            </main>
+          </div>
         </ThemeProvider>
       </body>
     </html>
