@@ -124,6 +124,7 @@ export default function KlijentDetaljiPage() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {listaPotreba.map((pozicija) => {
         const statusPotrebe = normalizirajStatusPotrebe(pozicija.status);
+        const avansPostotak = pozicija.avans_postotak ?? 0;
 
         return (
           <div key={pozicija.id} className="bg-white dark:bg-[#0A2B50] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 hover:border-brand-yellow/50 dark:hover:border-brand-yellow/50 transition-all group relative overflow-hidden">
@@ -156,7 +157,7 @@ export default function KlijentDetaljiPage() {
               {pozicija.avans_dogovoren && (
                 <div className="flex items-center gap-3 text-sm">
                   <div className="p-2 bg-gray-50 dark:bg-[#05182d] rounded-lg text-brand-orange"><Percent size={16} /></div>
-                  <span className="text-gray-600 dark:text-gray-300">Dogovoren avans: <strong className="text-brand-orange">{pozicija.avans_postotak}%</strong> <span className="text-xs text-gray-400">({((pozicija.cijena_po_kandidatu * pozicija.avans_postotak) / 100).toFixed(2)} €/osobi)</span></span>
+                  <span className="text-gray-600 dark:text-gray-300">Dogovoren avans: <strong className="text-brand-orange">{avansPostotak}%</strong> <span className="text-xs text-gray-400">({((pozicija.cijena_po_kandidatu * avansPostotak) / 100).toFixed(2)} €/osobi)</span></span>
                 </div>
               )}
             </div>
@@ -190,6 +191,7 @@ export default function KlijentDetaljiPage() {
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {listaPotreba.map((pozicija) => {
               const statusPotrebe = normalizirajStatusPotrebe(pozicija.status);
+              const avansPostotak = pozicija.avans_postotak ?? 0;
 
               return (
                 <tr key={pozicija.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
@@ -217,7 +219,7 @@ export default function KlijentDetaljiPage() {
                   <td className="py-4 px-6">
                     {pozicija.avans_dogovoren ? (
                       <span className="text-brand-orange font-medium">
-                        {pozicija.avans_postotak}% <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">({((pozicija.cijena_po_kandidatu * pozicija.avans_postotak) / 100).toFixed(2)}€)</span>
+                        {avansPostotak}% <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">({((pozicija.cijena_po_kandidatu * avansPostotak) / 100).toFixed(2)}€)</span>
                       </span>
                     ) : (
                       <span className="text-gray-400 dark:text-gray-600">-</span>
