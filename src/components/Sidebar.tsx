@@ -8,6 +8,7 @@ import {
   Users,
   CircleDollarSign,
   Briefcase,
+  Settings,
   Moon,
   Sun,
   Monitor,
@@ -181,6 +182,17 @@ export default function Sidebar() {
               })}
             </nav>
 
+            <div className="px-4 pb-4">
+              <Link
+                href="/postavke"
+                onClick={zatvoriMobile}
+                className={`${osnovniLinkKlase} gap-3 px-4`}
+              >
+                <Settings size={20} className="text-brand-yellow group-hover:text-brand-orange transition-colors" />
+                <span className="font-semibold">Postavke</span>
+              </Link>
+            </div>
+
             {mounted && (
               <div className="p-4 border-t border-gray-100 dark:border-gray-800/50">
                 {renderThemeToggle(false)}
@@ -218,6 +230,17 @@ export default function Sidebar() {
         </nav>
 
         <div className="mt-auto">
+          <div className={`${stisnut ? 'px-2' : 'px-4'} pb-3`}>
+            <Link
+              href="/postavke"
+              title="Postavke"
+              className={`${osnovniLinkKlase} ${stisnut ? 'justify-center px-2' : 'gap-3 px-4'}`}
+            >
+              <Settings size={20} className="text-brand-yellow group-hover:text-brand-orange transition-colors" />
+              {!stisnut && <span className="font-semibold">Postavke</span>}
+            </Link>
+          </div>
+
           <div className={`${stisnut ? 'px-2' : 'px-4'} pb-3`}>
             <button
               onClick={prebaciSidebar}

@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Building2, MapPin, Briefcase, Plus, ArrowLeft, Calendar, Euro, Percent, Users, LayoutGrid, List, FileText } from 'lucide-react';
 import DodajPozicijuModal from '@/components/DodajPozicijuModal';
 import Link from 'next/link';
-import { jsPDF } from 'jspdf';
+import { generirajUgovorPdf } from '@/lib/pdf/generirajUgovorPdf';
 
 // Pomoćna funkcija za striktni HR format datuma
 const formatirajDatum = (datumString: string) => {
@@ -16,17 +16,6 @@ const formatirajDatum = (datumString: string) => {
   const mjesec = (d.getMonth() + 1).toString().padStart(2, '0');
   const godina = d.getFullYear();
   return `${dan}.${mjesec}.${godina}.`;
-};
-
-// Pomoćna funkcija za pretvaranje fonta u Base64 format za jsPDF (Potrebno za dijakritičke znakove)
-const pretvoriUBase64 = (buffer: ArrayBuffer) => {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return window.btoa(binary);
 };
 
 const normalizirajStatusPotrebe = (status?: string | null) => {
@@ -123,89 +112,36 @@ export default function KlijentDetaljiPage() {
     window.localStorage.setItem(PRIKAZ_POTREBA_STORAGE_KEY, noviPrikaz);
   };
 
-  // --- NOVA FUNKCIJA SA OPEN SANS FONTOVIMA ---
   const generirajUgovorPDF = async () => {
     if (!klijent || odabranePozicije.length === 0) return;
 
     setToastPoruka({ tip: 'uspjeh', tekst: 'Generiram ugovor, molimo pričekajte...' });
 
-    const pozicijeZaUgovor = pozicije.filter(p => odabranePozicije.includes(p.id));
-    const doc = new jsPDF();
+    const pozicijeZaUgovor = pozicije.filter((pozicija) => odabranePozicije.includes(pozicija.id));
 
     try {
-      // 1. Učitavanje Regular fonta
-      const resRegular = await fetch('/fonts/OpenSans-Regular.ttf');
-      const bufferRegular = await resRegular.arrayBuffer();
-      const base64Regular = pretvoriUBase64(bufferRegular);
-      doc.addFileToVFS('OpenSans-Regular.ttf', base64Regular);
-      doc.addFont('OpenSans-Regular.ttf', 'OpenSans', 'normal');
+      await generirajUgovorPdf({
+        klijent: {
+          nazivTvrtke: klijent.naziv_tvrtke,
+          oib: klijent.oib,
+          ulica: klijent.ulica,
+          grad: klijent.grad,
+        },
+        pozicije: pozicijeZaUgovor.map((pozicija) => ({
+          nazivPozicije: pozicija.naziv_pozicije,
+          brojIzvrsitelja: pozicija.broj_izvrsitelja,
+          cijenaPoKandidatu: pozicija.cijena_po_kandidatu,
+          avansDogovoren: pozicija.avans_dogovoren,
+          avansPostotak: pozicija.avans_postotak,
+        })),
+      });
 
-      // 2. Učitavanje Bold fonta
-      const resBold = await fetch('/fonts/OpenSans-Bold.ttf');
-      const bufferBold = await resBold.arrayBuffer();
-      const base64Bold = pretvoriUBase64(bufferBold);
-      doc.addFileToVFS('OpenSans-Bold.ttf', base64Bold);
-      doc.addFont('OpenSans-Bold.ttf', 'OpenSans', 'bold');
+      setToastPoruka({ tip: 'uspjeh', tekst: 'Ugovor je uspješno generiran!' });
+      setOdabranePozicije([]);
     } catch (error) {
-      console.error('Greška pri učitavanju fonta:', error);
-      setToastPoruka({ tip: 'greska', tekst: 'Nisam uspio učitati Open Sans font.' });
+      console.error('Greška pri generiranju ugovora:', error);
+      setToastPoruka({ tip: 'greska', tekst: 'Došlo je do greške pri generiranju PDF ugovora.' });
     }
-
-    let yPos = 20;
-
-    // --- ZAGLAVLJE ---
-    doc.setFontSize(16);
-    doc.setFont("OpenSans", "bold");
-    doc.text("UGOVOR O POSREDOVANJU PRI ZAPOŠLJAVANJU", 105, yPos, { align: "center" });
-    
-    yPos += 20;
-    doc.setFontSize(12);
-    doc.setFont("OpenSans", "normal");
-    
-    // --- PODACI O KLIJENTU ---
-    doc.text(`Naručitelj: ${klijent.naziv_tvrtke}`, 20, yPos); yPos += 7;
-    doc.text(`OIB: ${klijent.oib}`, 20, yPos); yPos += 7;
-    doc.text(`Adresa: ${klijent.ulica || ''}, ${klijent.grad || ''}`, 20, yPos); yPos += 15;
-
-    // --- PREDMET UGOVORA (POZICIJE) ---
-    doc.text("Predmet ovog ugovora je posredovanje pri zapošljavanju za sljedeće pozicije:", 20, yPos);
-    yPos += 10;
-
-    pozicijeZaUgovor.forEach((poz, index) => {
-      doc.setFont("OpenSans", "bold");
-      doc.text(`${index + 1}. Pozicija: ${poz.naziv_pozicije}`, 25, yPos); yPos += 7;
-      
-      doc.setFont("OpenSans", "normal");
-      doc.text(`   - Traženi broj izvršitelja: ${poz.broj_izvrsitelja}`, 25, yPos); yPos += 7;
-      doc.text(`   - Cijena po kandidatu: ${poz.cijena_po_kandidatu} EUR`, 25, yPos); yPos += 7;
-      
-      if (poz.avans_dogovoren && poz.avans_postotak) {
-        const avansIznos = (poz.cijena_po_kandidatu * poz.avans_postotak) / 100;
-        doc.text(`   - Dogovoren avans: ${poz.avans_postotak}% (što iznosi ${avansIznos.toFixed(2)} EUR po osobi)`, 25, yPos); yPos += 7;
-      }
-      yPos += 5; // Razmak između pozicija
-    });
-
-    // --- OSTATAK UGOVORA (Ovdje ubaci svoj standardni tekst) ---
-    yPos += 10;
-    doc.setFont("OpenSans", "bold");
-    doc.text("Članak 2.", 20, yPos); yPos += 7;
-    
-    doc.setFont("OpenSans", "normal");
-    // Ovdje ide dugački tekst ugovora s č, ć, ž, š, đ
-    // doc.text("Ovdje ide tvoj dugacki tekst ugovora...", 20, yPos);
-    
-    // Mjesta za potpis
-    yPos += 40;
-    doc.text("Za Agenciju:", 40, yPos);
-    doc.text("Za Naručitelja:", 140, yPos);
-
-    // Spremanje dokumenta
-    const imeDatoteke = `Ugovor_${klijent.naziv_tvrtke.replace(/\s+/g, '_')}.pdf`;
-    doc.save(imeDatoteke);
-    
-    setToastPoruka({ tip: 'uspjeh', tekst: 'Ugovor je uspješno generiran!' });
-    setOdabranePozicije([]); // Očisti odabir nakon kreiranja
   };
 
   const otvorenePozicije = pozicije.filter(

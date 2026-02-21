@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Users, Calendar, Euro, Percent, Plus, Save, FileText, Globe, Phone, Mail, ChevronDown } from 'lucide-react';
 import DodajKandidataModal from '@/components/DodajKandidataModal';
-import { jsPDF } from 'jspdf';
+import { generirajUgovorPdf } from '@/lib/pdf/generirajUgovorPdf';
 
 const formatirajDatum = (datumString: string) => {
   if (!datumString) return '-';
@@ -66,60 +66,31 @@ export default function PozicijaDetaljiPage() {
     setSpremanjeUvjeta(false);
   };
 
-  const generirajUgovorPDF = () => {
+  const generirajUgovorPDF = async () => {
     if (!pozicija) return;
 
-    const klijentNaziv = pozicija.klijenti?.naziv_tvrtke || 'Nepoznati_klijent';
-    const klijentOib = pozicija.klijenti?.oib || '-';
-    const klijentUlica = pozicija.klijenti?.ulica || '';
-    const klijentGrad = pozicija.klijenti?.grad || '';
-    const avansPostotak = pozicija.avans_postotak ?? 0;
-
-    const doc = new jsPDF();
-    let yPos = 20;
-
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('UGOVOR O POSREDOVANJU PRI ZAPOSLJAVANJU', 105, yPos, { align: 'center' });
-
-    yPos += 20;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-
-    doc.text(`Narucitelj: ${klijentNaziv}`, 20, yPos);
-    yPos += 7;
-    doc.text(`OIB: ${klijentOib}`, 20, yPos);
-    yPos += 7;
-    doc.text(`Adresa: ${klijentUlica}, ${klijentGrad}`, 20, yPos);
-    yPos += 15;
-
-    doc.text('Predmet ovog ugovora je posredovanje pri zaposljavanju za sljedecu poziciju:', 20, yPos);
-    yPos += 10;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text(`1. Pozicija: ${pozicija.naziv_pozicije}`, 25, yPos);
-    yPos += 7;
-    doc.setFont('helvetica', 'normal');
-    doc.text(`   - Trazeni broj izvrsitelja: ${pozicija.broj_izvrsitelja}`, 25, yPos);
-    yPos += 7;
-    doc.text(`   - Cijena po kandidatu: ${pozicija.cijena_po_kandidatu} EUR`, 25, yPos);
-    yPos += 7;
-
-    if (pozicija.avans_dogovoren && avansPostotak > 0) {
-      const avansIznos = (pozicija.cijena_po_kandidatu * avansPostotak) / 100;
-      doc.text(`   - Dogovoren avans: ${avansPostotak}% (sto iznosi ${avansIznos.toFixed(2)} EUR po osobi)`, 25, yPos);
-      yPos += 7;
+    try {
+      await generirajUgovorPdf({
+        klijent: {
+          nazivTvrtke: pozicija.klijenti?.naziv_tvrtke || 'Nepoznati klijent',
+          oib: pozicija.klijenti?.oib || '-',
+          ulica: pozicija.klijenti?.ulica || '',
+          grad: pozicija.klijenti?.grad || '',
+        },
+        pozicije: [
+          {
+            nazivPozicije: pozicija.naziv_pozicije,
+            brojIzvrsitelja: pozicija.broj_izvrsitelja,
+            cijenaPoKandidatu: pozicija.cijena_po_kandidatu,
+            avansDogovoren: pozicija.avans_dogovoren,
+            avansPostotak: pozicija.avans_postotak,
+          },
+        ],
+      });
+    } catch (error) {
+      console.error('Greška pri generiranju ugovora:', error);
+      alert('Došlo je do greške pri generiranju PDF ugovora.');
     }
-
-    yPos += 10;
-    doc.text('Clanak 2.', 20, yPos);
-    yPos += 47;
-    doc.text('Za Agenciju:', 40, yPos);
-    doc.text('Za Narucitelja:', 140, yPos);
-
-    const siguranKlijent = klijentNaziv.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const sigurnaPozicija = (pozicija.naziv_pozicije || 'pozicija').replace(/[^a-zA-Z0-9_-]/g, '_');
-    doc.save(`Ugovor_${siguranKlijent}_${sigurnaPozicija}.pdf`);
   };
 
   // Nova funkcija za izravnu promjenu statusa u tablici
@@ -145,7 +116,7 @@ export default function PozicijaDetaljiPage() {
           <ArrowLeft size={20} /> Natrag na klijenta ({pozicija.klijenti?.naziv_tvrtke})
         </button>
         <button
-          onClick={generirajUgovorPDF}
+          onClick={() => void generirajUgovorPDF()}
           className="flex items-center gap-2 bg-brand-orange hover:bg-brand-yellow text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm"
         >
           <FileText size={20} /> Generiraj ugovor
