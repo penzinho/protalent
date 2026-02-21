@@ -3,36 +3,70 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Loader2, Calculator } from 'lucide-react';
-import { revalidateCachePaths } from '@/lib/client/revalidateCache';
-
-interface Props {
-  klijentId: string;
-  zatvoriModal: () => void;
-  osvjeziListu: () => void;
-}
 
 interface NacionalnostOpcija {
   id: string;
   naziv: string;
 }
 
-export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziListu }: Props) {
+interface PozicijaZaUredivanje {
+  id: string;
+  naziv_pozicije: string;
+  broj_izvrsitelja: number;
+  datum_upisa: string;
+  tip_radnika: 'domaci' | 'strani' | 'strani_u_rh';
+  cijena_po_kandidatu: number;
+  avans_dogovoren: boolean;
+  avans_postotak: number | null;
+  nacionalnosti?: string[];
+  nacionalnosti_ids?: string[];
+}
+
+interface Props {
+  pozicija: PozicijaZaUredivanje;
+  zatvoriModal: () => void;
+  osvjeziPodatke: () => void;
+}
+
+const TIPOVI_RADNIKA = ['domaci', 'strani', 'strani_u_rh'] as const;
+
+const jeNedostupnaRelacijaNacionalnosti = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
+  const payload = error as { code?: string | null; message?: string | null; details?: string | null };
+  const code = String(payload.code || '');
+  const text = `${payload.message || ''} ${payload.details || ''}`.toLowerCase();
+
+  return (
+    code === '42P01' ||
+    code === 'PGRST200' ||
+    text.includes('pozicije_nacionalnosti') ||
+    text.includes('nacionalnosti_radnika')
+  );
+};
+
+const normalizirajNaziv = (value: string) => value.trim().toLowerCase();
+
+export default function UrediPozicijuModal({ pozicija, zatvoriModal, osvjeziPodatke }: Props) {
   const [spremanje, setSpremanje] = useState(false);
   const [greska, setGreska] = useState('');
-  const TIPOVI_RADNIKA = ['domaci', 'strani', 'strani_u_rh'] as const;
   const [nacionalnostiOpcije, setNacionalnostiOpcije] = useState<NacionalnostOpcija[]>([]);
-  const [odabraneNacionalnosti, setOdabraneNacionalnosti] = useState<string[]>([]);
+  const [odabraneNacionalnosti, setOdabraneNacionalnosti] = useState<string[]>(
+    pozicija.nacionalnosti_ids || []
+  );
   const [novaNacionalnost, setNovaNacionalnost] = useState('');
   const [dodavanjeNacionalnosti, setDodavanjeNacionalnosti] = useState(false);
-  
+
   const [formData, setFormData] = useState({
-    naziv_pozicije: '',
-    broj_izvrsitelja: '1', // Promijenjeno u string kako bismo mogli obrisati broj
-    datum_upisa: new Date().toISOString().split('T')[0],
-    tip_radnika: 'domaci' as (typeof TIPOVI_RADNIKA)[number],
-    cijena_po_kandidatu: '',
-    avans_dogovoren: false,
-    avans_postotak: '',
+    naziv_pozicije: pozicija.naziv_pozicije || '',
+    broj_izvrsitelja: String(pozicija.broj_izvrsitelja || 1),
+    datum_upisa: (pozicija.datum_upisa || new Date().toISOString().split('T')[0]).split('T')[0],
+    tip_radnika: (pozicija.tip_radnika || 'domaci') as (typeof TIPOVI_RADNIKA)[number],
+    cijena_po_kandidatu: String(pozicija.cijena_po_kandidatu ?? ''),
+    avans_dogovoren: Boolean(pozicija.avans_dogovoren),
+    avans_postotak:
+      pozicija.avans_postotak === null || pozicija.avans_postotak === undefined
+        ? ''
+        : String(pozicija.avans_postotak),
   });
 
   const trebaNacionalnosti =
@@ -49,14 +83,29 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
       return;
     }
 
-    setNacionalnostiOpcije((data || []) as NacionalnostOpcija[]);
+    const opcije = (data || []) as NacionalnostOpcija[];
+    setNacionalnostiOpcije(opcije);
+
+    if (
+      odabraneNacionalnosti.length === 0 &&
+      Array.isArray(pozicija.nacionalnosti) &&
+      pozicija.nacionalnosti.length > 0
+    ) {
+      const byName = new Map(opcije.map((opcija) => [normalizirajNaziv(opcija.naziv), opcija.id]));
+      const preselected = pozicija.nacionalnosti
+        .map((naziv) => byName.get(normalizirajNaziv(naziv)))
+        .filter((id): id is string => Boolean(id));
+
+      if (preselected.length > 0) {
+        setOdabraneNacionalnosti(Array.from(new Set(preselected)));
+      }
+    }
   };
 
   useEffect(() => {
     void dohvatiNacionalnosti();
   }, []);
 
-  // Funkcija za automatski izračun avansa u eurima
   const izracunajIznosAvansa = () => {
     const cijena = parseFloat(formData.cijena_po_kandidatu);
     const postotak = parseFloat(formData.avans_postotak);
@@ -90,12 +139,12 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
     if (error) {
       if ((error as { code?: string | null }).code === '23505') {
         setGreska('Nacionalnost već postoji u popisu.');
-        setNovaNacionalnost('');
         await dohvatiNacionalnosti();
       } else {
         setGreska('Greška pri dodavanju nacionalnosti.');
       }
       setDodavanjeNacionalnosti(false);
+      setNovaNacionalnost('');
       return;
     }
 
@@ -110,7 +159,7 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
     setDodavanjeNacionalnosti(false);
   };
 
-  const spremiPoziciju = async () => {
+  const spremiPromjene = async () => {
     if (
       !formData.naziv_pozicije ||
       !formData.cijena_po_kandidatu ||
@@ -128,58 +177,61 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
     setSpremanje(true);
     setGreska('');
 
-    const { data: novaPozicija, error } = await supabase
+    const { error: updateError } = await supabase
       .from('pozicije')
-      .insert([{
-        klijent_id: klijentId,
+      .update({
         naziv_pozicije: formData.naziv_pozicije,
-        broj_izvrsitelja: parseInt(formData.broj_izvrsitelja) || 1, // Osiguravamo da je barem 1 ako se ostavi prazno na kraju
+        broj_izvrsitelja: parseInt(formData.broj_izvrsitelja) || 1,
         datum_upisa: formData.datum_upisa,
         tip_radnika: formData.tip_radnika,
         cijena_po_kandidatu: parseFloat(formData.cijena_po_kandidatu),
         avans_dogovoren: formData.avans_dogovoren,
         avans_postotak: formData.avans_dogovoren ? parseFloat(formData.avans_postotak) : null,
-        status: 'Otvoreno'
-      }])
-      .select('id')
-      .single();
+      })
+      .eq('id', pozicija.id);
 
-    if (error || !novaPozicija?.id) {
-      setGreska('Greška pri spremanju pozicije.');
+    if (updateError) {
+      setGreska('Greška pri spremanju izmjena potrebe.');
+      setSpremanje(false);
+      return;
+    }
+
+    const { error: deleteRelError } = await supabase
+      .from('pozicije_nacionalnosti')
+      .delete()
+      .eq('pozicija_id', pozicija.id);
+
+    if (deleteRelError && !jeNedostupnaRelacijaNacionalnosti(deleteRelError)) {
+      setGreska('Detalji su spremljeni, ali nije moguće ažurirati nacionalnosti.');
       setSpremanje(false);
       return;
     }
 
     if (trebaNacionalnosti) {
       const payload = odabraneNacionalnosti.map((nacionalnostId) => ({
-        pozicija_id: novaPozicija.id as string,
+        pozicija_id: pozicija.id,
         nacionalnost_id: nacionalnostId,
       }));
-      const { error: povezivanjeGreska } = await supabase
+      const { error: insertRelError } = await supabase
         .from('pozicije_nacionalnosti')
         .insert(payload);
 
-      if (povezivanjeGreska) {
-        setGreska('Pozicija je spremljena, ali nacionalnosti nisu uspješno povezane.');
+      if (insertRelError && !jeNedostupnaRelacijaNacionalnosti(insertRelError)) {
+        setGreska('Detalji su spremljeni, ali nije moguće ažurirati nacionalnosti.');
         setSpremanje(false);
         return;
       }
     }
 
-    const revalidated = await revalidateCachePaths(['/klijenti', `/klijenti/${klijentId}`]);
-    if (!revalidated) {
-      console.error(`Pozicija spremljena, ali revalidate cachea nije uspio za klijenta ${klijentId}.`);
-    }
-    osvjeziListu();
+    osvjeziPodatke();
     zatvoriModal();
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#0A2B50] rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
-        
+      <div className="bg-white dark:bg-[#0A2B50] rounded-2xl w-full max-w-xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
         <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-xl font-bold text-brand-navy dark:text-white">Nova potreba</h2>
+          <h2 className="text-xl font-bold text-brand-navy dark:text-white">Uredi potrebu</h2>
           <button onClick={zatvoriModal} className="text-gray-400 hover:text-brand-orange dark:hover:text-brand-yellow transition-colors">
             <X size={24} />
           </button>
@@ -194,11 +246,10 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
 
           <div>
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Ime radnog mjesta</label>
-            <input 
-              type="text" 
-              placeholder="Npr. Građevinski radnik"
-              value={formData.naziv_pozicije} 
-              onChange={(e) => setFormData({...formData, naziv_pozicije: e.target.value})}
+            <input
+              type="text"
+              value={formData.naziv_pozicije}
+              onChange={(e) => setFormData({ ...formData, naziv_pozicije: e.target.value })}
               className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
             />
           </div>
@@ -206,20 +257,20 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Broj kandidata</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 min="1"
-                value={formData.broj_izvrsitelja} 
-                onChange={(e) => setFormData({...formData, broj_izvrsitelja: e.target.value})}
+                value={formData.broj_izvrsitelja}
+                onChange={(e) => setFormData({ ...formData, broj_izvrsitelja: e.target.value })}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
               />
             </div>
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Datum upisa</label>
-              <input 
-                type="date" 
-                value={formData.datum_upisa} 
-                onChange={(e) => setFormData({...formData, datum_upisa: e.target.value})}
+              <input
+                type="date"
+                value={formData.datum_upisa}
+                onChange={(e) => setFormData({ ...formData, datum_upisa: e.target.value })}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
               />
             </div>
@@ -227,11 +278,10 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
 
           <div>
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Ugovorena cijena po kandidatu (€)</label>
-            <input 
-              type="number" 
-              placeholder="Npr. 500"
-              value={formData.cijena_po_kandidatu} 
-              onChange={(e) => setFormData({...formData, cijena_po_kandidatu: e.target.value})}
+            <input
+              type="number"
+              value={formData.cijena_po_kandidatu}
+              onChange={(e) => setFormData({ ...formData, cijena_po_kandidatu: e.target.value })}
               className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
             />
           </div>
@@ -242,16 +292,12 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
               value={formData.tip_radnika}
               onChange={(e) => {
                 const noviTip = e.target.value as (typeof TIPOVI_RADNIKA)[number];
-                setFormData({
-                  ...formData,
-                  tip_radnika: noviTip,
-                });
+                setFormData({ ...formData, tip_radnika: noviTip });
                 if (noviTip === 'domaci') {
                   setOdabraneNacionalnosti([]);
                 }
               }}
               className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
-              required
             >
               <option value="domaci">Domaći</option>
               <option value="strani">Strani</option>
@@ -265,16 +311,11 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
                 <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">
                   Nacionalnosti radnika
                 </label>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Odaberite jednu ili više nacionalnosti za ovu potrebu.
-                </p>
               </div>
 
               <div className="max-h-44 overflow-y-auto space-y-2 pr-1">
                 {nacionalnostiOpcije.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Trenutno nema nacionalnosti u bazi.
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Trenutno nema nacionalnosti u bazi.</p>
                 ) : (
                   nacionalnostiOpcije.map((nacionalnost) => (
                     <label key={nacionalnost.id} className="flex items-center gap-2 text-sm text-brand-navy dark:text-gray-300 cursor-pointer">
@@ -312,26 +353,26 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
 
           <div className="p-4 bg-gray-50 dark:bg-[#05182d] rounded-xl border border-gray-200 dark:border-gray-700">
             <label className="flex items-center gap-3 cursor-pointer">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={formData.avans_dogovoren}
-                onChange={(e) => setFormData({...formData, avans_dogovoren: e.target.checked})}
+                onChange={(e) => setFormData({ ...formData, avans_dogovoren: e.target.checked })}
                 className="w-5 h-5 rounded border-gray-300 text-brand-orange focus:ring-brand-orange accent-brand-orange"
               />
               <span className="font-semibold text-brand-navy dark:text-gray-300">Dogovoren je avans</span>
             </label>
-            
+
             {formData.avans_dogovoren && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-2">
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
                     <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Postotak avansa (%)</label>
-                    <input 
-                      type="number" 
-                      placeholder="Npr. 30"
-                      min="1" max="100"
-                      value={formData.avans_postotak} 
-                      onChange={(e) => setFormData({...formData, avans_postotak: e.target.value})}
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={formData.avans_postotak}
+                      onChange={(e) => setFormData({ ...formData, avans_postotak: e.target.value })}
                       className="w-full px-4 py-2.5 bg-white dark:bg-[#0A2B50] border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
                     />
                   </div>
@@ -349,23 +390,23 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
         </div>
 
         <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#07213E] flex justify-end gap-3 rounded-b-2xl">
-          <button onClick={zatvoriModal} className="px-5 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-brand-navy dark:hover:text-white transition-colors">Odustani</button>
-          <button 
-            onClick={spremiPoziciju}
+          <button onClick={zatvoriModal} className="px-5 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-brand-navy dark:hover:text-white transition-colors">
+            Odustani
+          </button>
+          <button
+            onClick={spremiPromjene}
             disabled={
               spremanje ||
               !formData.naziv_pozicije ||
-              !formData.tip_radnika ||
               !formData.cijena_po_kandidatu ||
               (trebaNacionalnosti && odabraneNacionalnosti.length === 0)
             }
             className="bg-brand-orange text-white px-6 py-2.5 rounded-xl hover:bg-brand-yellow transition-colors flex items-center gap-2 font-medium disabled:opacity-50"
           >
             {spremanje && <Loader2 size={18} className="animate-spin" />}
-            Spremi potrebu
+            Spremi izmjene
           </button>
         </div>
-
       </div>
     </div>
   );

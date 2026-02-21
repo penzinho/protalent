@@ -3,14 +3,74 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Users, Calendar, Euro, Percent, Plus, Save, FileText, Globe, Phone, Mail, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Users, Calendar, Euro, Percent, Plus, Save, FileText, Globe, Phone, Mail, ChevronDown, Pencil } from 'lucide-react';
 import DodajKandidataModal from '@/components/DodajKandidataModal';
+import UrediPozicijuModal from '@/components/UrediPozicijuModal';
 import { generirajUgovorPdf } from '@/lib/pdf/generirajUgovorPdf';
 
 const formatirajDatum = (datumString: string) => {
   if (!datumString) return '-';
   const d = new Date(datumString);
   return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}.`;
+};
+
+const formatirajTipRadnika = (tipRadnika?: string | null) => {
+  switch (tipRadnika) {
+    case 'strani':
+      return 'Strani';
+    case 'strani_u_rh':
+      return 'Strani radnici u RH';
+    case 'domaci':
+    default:
+      return 'Domaći';
+  }
+};
+
+const formatirajNacionalnosti = (nacionalnosti?: string[] | null) => {
+  if (!Array.isArray(nacionalnosti) || nacionalnosti.length === 0) return '-';
+  return nacionalnosti.join(', ');
+};
+
+const jeNedostupnaRelacijaNacionalnosti = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
+  const payload = error as { code?: string | null; message?: string | null; details?: string | null };
+  const code = String(payload.code || '');
+  const text = `${payload.message || ''} ${payload.details || ''}`.toLowerCase();
+
+  return (
+    code === '42P01' ||
+    code === 'PGRST200' ||
+    text.includes('pozicije_nacionalnosti') ||
+    text.includes('nacionalnosti_radnika')
+  );
+};
+
+const izvuciNacionalnosti = (pozicijaData: any): string[] => {
+  if (!Array.isArray(pozicijaData?.pozicije_nacionalnosti)) return [];
+  const mapped = pozicijaData.pozicije_nacionalnosti
+    .map((stavka: any) => stavka?.nacionalnosti_radnika?.naziv)
+    .filter((naziv: unknown) => typeof naziv === 'string') as string[];
+  return Array.from(new Set(mapped));
+};
+
+const izvuciNacionalnostiIdove = (pozicijaData: any): string[] => {
+  if (!Array.isArray(pozicijaData?.pozicije_nacionalnosti)) return [];
+  const mapped = pozicijaData.pozicije_nacionalnosti
+    .map((stavka: any) => stavka?.nacionalnost_id)
+    .filter((id: unknown) => typeof id === 'string') as string[];
+  return Array.from(new Set(mapped));
+};
+
+const normalizirajStatusPotrebe = (status?: string | null) => {
+  if ((status || '').toLowerCase() === 'zatvoreno') return 'Zatvoreno';
+  return 'Otvoreno';
+};
+
+const dobijBojuStatusaPotrebe = (status: string) => {
+  if (status === 'Zatvoreno') {
+    return 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/40';
+  }
+  return 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/40';
 };
 
 // Pomoćna funkcija za određivanje boje statusa
@@ -37,21 +97,42 @@ export default function PozicijaDetaljiPage() {
   const [kandidati, setKandidati] = useState<any[]>([]);
   const [ucitavanje, setUcitavanje] = useState(true);
   const [modalOtvoren, setModalOtvoren] = useState(false);
+  const [modalUrediOtvoren, setModalUrediOtvoren] = useState(false);
+  const [mijenjanjeStatusaPotrebe, setMijenjanjeStatusaPotrebe] = useState(false);
   
   const [uvjeti, setUvjeti] = useState('');
   const [spremanjeUvjeta, setSpremanjeUvjeta] = useState(false);
 
   const dohvatiPodatke = async () => {
     setUcitavanje(true);
-    const { data: pozicijaData } = await supabase
+    const { data: pozicijaDataSaNacionalnostima, error: pozicijaGreska } = await supabase
       .from('pozicije')
-      .select('*, klijenti(id, naziv_tvrtke, oib, ulica, grad)')
+      .select('*, klijenti(id, naziv_tvrtke, oib, ulica, grad), pozicije_nacionalnosti(nacionalnost_id, nacionalnosti_radnika(naziv))')
       .eq('id', id)
       .single();
+
+    let pozicijaData = pozicijaDataSaNacionalnostima;
+    if (pozicijaGreska && jeNedostupnaRelacijaNacionalnosti(pozicijaGreska)) {
+      const { data: fallbackPozicija } = await supabase
+        .from('pozicije')
+        .select('*, klijenti(id, naziv_tvrtke, oib, ulica, grad)')
+        .eq('id', id)
+        .single();
+      pozicijaData = fallbackPozicija;
+    }
+
+    const pozicijaSaNacionalnostima = pozicijaData
+      ? {
+          ...pozicijaData,
+          nacionalnosti: izvuciNacionalnosti(pozicijaData),
+          nacionalnosti_ids: izvuciNacionalnostiIdove(pozicijaData),
+        }
+      : null;
+
     const { data: kandidatiData } = await supabase.from('kandidati').select('*').eq('pozicija_id', id).order('datum_slanja', { ascending: false });
     
-    setPozicija(pozicijaData);
-    setUvjeti(pozicijaData?.uvjeti_zaposlenja || '');
+    setPozicija(pozicijaSaNacionalnostima);
+    setUvjeti(pozicijaSaNacionalnostima?.uvjeti_zaposlenja || '');
     setKandidati(kandidatiData || []);
     setUcitavanje(false);
   };
@@ -106,8 +187,34 @@ export default function PozicijaDetaljiPage() {
     }
   };
 
+  const promijeniStatusPotrebe = async () => {
+    if (!pozicija) return;
+
+    const trenutniStatus = normalizirajStatusPotrebe(pozicija.status);
+    const noviStatus = trenutniStatus === 'Otvoreno' ? 'Zatvoreno' : 'Otvoreno';
+    const prethodniStatus = pozicija.status;
+
+    setMijenjanjeStatusaPotrebe(true);
+    setPozicija((trenutna: any) => (trenutna ? { ...trenutna, status: noviStatus } : trenutna));
+
+    const { error } = await supabase
+      .from('pozicije')
+      .update({ status: noviStatus })
+      .eq('id', pozicija.id);
+
+    if (error) {
+      alert('Došlo je do greške pri promjeni statusa potrebe.');
+      setPozicija((trenutna: any) =>
+        trenutna ? { ...trenutna, status: prethodniStatus } : trenutna
+      );
+    }
+
+    setMijenjanjeStatusaPotrebe(false);
+  };
+
   if (ucitavanje) return <div className="p-8 text-gray-500 dark:text-gray-400">Učitavanje pozicije...</div>;
   if (!pozicija) return <div className="p-8 text-red-500">Pozicija nije pronađena.</div>;
+  const statusPotrebe = normalizirajStatusPotrebe(pozicija.status);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -115,12 +222,20 @@ export default function PozicijaDetaljiPage() {
         <button onClick={() => router.push(`/klijenti/${pozicija.klijent_id}`)} className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-brand-orange dark:hover:text-brand-yellow transition-colors font-medium">
           <ArrowLeft size={20} /> Natrag na klijenta ({pozicija.klijenti?.naziv_tvrtke})
         </button>
-        <button
-          onClick={() => void generirajUgovorPDF()}
-          className="flex items-center gap-2 bg-brand-orange hover:bg-brand-yellow text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm"
-        >
-          <FileText size={20} /> Generiraj ugovor
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setModalUrediOtvoren(true)}
+            className="flex items-center gap-2 bg-gray-100 dark:bg-[#05182d] hover:bg-gray-200 dark:hover:bg-[#07213E] text-brand-navy dark:text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm border border-gray-200 dark:border-gray-700"
+          >
+            <Pencil size={18} /> Uredi potrebu
+          </button>
+          <button
+            onClick={() => void generirajUgovorPDF()}
+            className="flex items-center gap-2 bg-brand-orange hover:bg-brand-yellow text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm"
+          >
+            <FileText size={20} /> Generiraj ugovor
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -131,15 +246,28 @@ export default function PozicijaDetaljiPage() {
               <h1 className="text-3xl font-bold text-brand-navy dark:text-white">{pozicija.naziv_pozicije}</h1>
               <p className="text-brand-orange mt-1 font-medium">{pozicija.klijenti?.naziv_tvrtke}</p>
             </div>
-            <span className="px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-xs font-bold rounded-full uppercase tracking-wide border border-green-200 dark:border-green-800/30">
-              {pozicija.status}
-            </span>
+            <button
+              onClick={() => void promijeniStatusPotrebe()}
+              disabled={mijenjanjeStatusaPotrebe}
+              className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide border transition-colors disabled:opacity-60 ${dobijBojuStatusaPotrebe(statusPotrebe)}`}
+              title="Klikni za promjenu statusa potrebe"
+            >
+              {mijenjanjeStatusaPotrebe ? 'Spremam...' : statusPotrebe}
+            </button>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center gap-3 text-sm">
               <div className="p-2 bg-gray-50 dark:bg-[#05182d] rounded-lg text-brand-yellow"><Users size={18} /></div>
               <span className="text-gray-600 dark:text-gray-300">Ukupno traženo: <strong className="text-brand-navy dark:text-white text-base">{pozicija.broj_izvrsitelja} radnika</strong></span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <div className="p-2 bg-gray-50 dark:bg-[#05182d] rounded-lg text-brand-yellow"><Globe size={18} /></div>
+              <span className="text-gray-600 dark:text-gray-300">Tip radnika: <strong className="text-brand-navy dark:text-white">{formatirajTipRadnika(pozicija.tip_radnika)}</strong></span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <div className="p-2 bg-gray-50 dark:bg-[#05182d] rounded-lg text-brand-yellow"><Globe size={18} /></div>
+              <span className="text-gray-600 dark:text-gray-300">Nacionalnosti: <strong className="text-brand-navy dark:text-white">{formatirajNacionalnosti(pozicija.nacionalnosti)}</strong></span>
             </div>
             <div className="flex items-center gap-3 text-sm">
               <div className="p-2 bg-gray-50 dark:bg-[#05182d] rounded-lg text-brand-yellow"><Calendar size={18} /></div>
@@ -266,6 +394,13 @@ export default function PozicijaDetaljiPage() {
           pozicijaId={id as string} 
           zatvoriModal={() => setModalOtvoren(false)} 
           osvjeziListu={dohvatiPodatke} 
+        />
+      )}
+      {modalUrediOtvoren && (
+        <UrediPozicijuModal
+          pozicija={pozicija}
+          zatvoriModal={() => setModalUrediOtvoren(false)}
+          osvjeziPodatke={dohvatiPodatke}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 import KlijentiClientView from '@/components/klijenti/KlijentiClientView';
 import { dohvatiKlijenteOverview } from '@/lib/server/klijenti';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 900;
 
 export default async function KlijentiPage() {
   const { klijenti, greska } = await dohvatiKlijenteOverview();

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Search, Loader2 } from 'lucide-react';
+import { revalidateCachePaths } from '@/lib/client/revalidateCache';
 
 interface Props {
   zatvoriModal: () => void;
@@ -65,6 +66,10 @@ export default function DodajKlijentaModal({ zatvoriModal, osvjeziListu }: Props
       setGreska('Greška pri spremanju. Možda klijent već postoji.');
       setSpremanje(false);
     } else {
+      const revalidated = await revalidateCachePaths(['/klijenti']);
+      if (!revalidated) {
+        console.error('Klijent spremljen, ali revalidate cachea nije uspio za /klijenti.');
+      }
       osvjeziListu();
       zatvoriModal();
     }
