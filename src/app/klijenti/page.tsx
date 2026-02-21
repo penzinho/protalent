@@ -147,10 +147,15 @@ export default function KlijentiPage() {
                     {filtriraniKlijenti.map((klijent) => (
                       <tr key={klijent.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
                         <td className="py-4 px-6">
-                          <p className="font-bold text-brand-navy dark:text-white">
-                            {klijent.skraceni_naziv || klijent.naziv_tvrtke}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">OIB: {klijent.oib}</p>
+                          <Link
+                            href={`/klijenti/${klijent.id}`}
+                            className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/50"
+                          >
+                            <p className="font-bold text-brand-navy dark:text-white">
+                              {klijent.skraceni_naziv || klijent.naziv_tvrtke}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">OIB: {klijent.oib}</p>
+                          </Link>
                         </td>
                         <td className="py-4 px-6">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-navy/5 dark:bg-brand-yellow/10 text-brand-navy dark:text-brand-yellow border border-brand-navy/10 dark:border-brand-yellow/20">

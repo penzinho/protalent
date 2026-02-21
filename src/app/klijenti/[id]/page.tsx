@@ -138,8 +138,13 @@ export default function KlijentDetaljiPage() {
                 <option value="Zatvoreno">Zatvoreno</option>
               </select>
             </div>
-            <h3 className="text-xl font-bold text-brand-navy dark:text-white mb-5 pr-36">
-              {pozicija.naziv_pozicije}
+            <h3 className="text-xl font-bold mb-5 pr-36">
+              <Link
+                href={`/pozicije/${pozicija.id}`}
+                className="text-brand-navy dark:text-white hover:text-brand-yellow transition-colors"
+              >
+                {pozicija.naziv_pozicije}
+              </Link>
             </h3>
             <div className="space-y-3 mb-6">
               <div className="flex items-center gap-3 text-sm">
@@ -195,8 +200,13 @@ export default function KlijentDetaljiPage() {
 
               return (
                 <tr key={pozicija.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
-                  <td className="py-4 px-6 font-semibold text-brand-navy dark:text-white">
-                    {pozicija.naziv_pozicije}
+                  <td className="py-4 px-6 font-semibold">
+                    <Link
+                      href={`/pozicije/${pozicija.id}`}
+                      className="text-brand-navy dark:text-white hover:text-brand-yellow transition-colors"
+                    >
+                      {pozicija.naziv_pozicije}
+                    </Link>
                   </td>
                   <td className="py-4 px-6">
                     <select
