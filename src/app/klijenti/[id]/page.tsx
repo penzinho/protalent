@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
-import { Building2, MapPin, Briefcase, Plus, ArrowLeft, Calendar, Euro, Percent, Users, LayoutGrid, List } from 'lucide-react';
+import { Building2, MapPin, Briefcase, Plus, ArrowLeft, Calendar, Euro, Percent, Users, LayoutGrid, List, FileText } from 'lucide-react';
 import DodajPozicijuModal from '@/components/DodajPozicijuModal';
 import Link from 'next/link';
+import { jsPDF } from 'jspdf';
 
 // Pomoćna funkcija za striktni HR format datuma
 const formatirajDatum = (datumString: string) => {
@@ -67,6 +68,7 @@ export default function KlijentDetaljiPage() {
   const [ucitavanje, setUcitavanje] = useState(true);
   const [modalOtvoren, setModalOtvoren] = useState(false);
   const [toastPoruka, setToastPoruka] = useState<ToastPoruka | null>(null);
+  const [odabranePozicije, setOdabranePozicije] = useState<string[]>([]);
   
   // Novi state za upravljanje prikazom (kartice ili tablica)
   const [prikaz, setPrikaz] = useState<'cards' | 'table'>(() => {
@@ -113,6 +115,65 @@ export default function KlijentDetaljiPage() {
     window.localStorage.setItem(PRIKAZ_POTREBA_STORAGE_KEY, noviPrikaz);
   };
 
+  const generirajUgovorPDF = () => {
+    if (!klijent || odabranePozicije.length === 0) return;
+
+    // Dohvati podatke samo za odabrane pozicije
+    const pozicijeZaUgovor = pozicije.filter(p => odabranePozicije.includes(p.id));
+
+    const doc = new jsPDF();
+    let yPos = 20;
+
+    // --- ZAGLAVLJE ---
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("UGOVOR O POSREDOVANJU PRI ZAPOSLJAVANJU", 105, yPos, { align: "center" });
+    
+    yPos += 20;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    
+    // --- PODACI O KLIJENTU ---
+    doc.text(`Narucitelj: ${klijent.naziv_tvrtke}`, 20, yPos); yPos += 7;
+    doc.text(`OIB: ${klijent.oib}`, 20, yPos); yPos += 7;
+    doc.text(`Adresa: ${klijent.ulica || ''}, ${klijent.grad || ''}`, 20, yPos); yPos += 15;
+
+    // --- PREDMET UGOVORA (POZICIJE) ---
+    doc.text("Predmet ovog ugovora je posredovanje pri zaposljavanju za sljedece pozicije:", 20, yPos);
+    yPos += 10;
+
+    pozicijeZaUgovor.forEach((poz, index) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(`${index + 1}. Pozicija: ${poz.naziv_pozicije}`, 25, yPos); yPos += 7;
+      
+      doc.setFont("helvetica", "normal");
+      doc.text(`   - Trazeni broj izvrsitelja: ${poz.broj_izvrsitelja}`, 25, yPos); yPos += 7;
+      doc.text(`   - Cijena po kandidatu: ${poz.cijena_po_kandidatu} EUR`, 25, yPos); yPos += 7;
+      
+      if (poz.avans_dogovoren && poz.avans_postotak) {
+        const avansIznos = (poz.cijena_po_kandidatu * poz.avans_postotak) / 100;
+        doc.text(`   - Dogovoren avans: ${poz.avans_postotak}% (sto iznosi ${avansIznos.toFixed(2)} EUR po osobi)`, 25, yPos); yPos += 7;
+      }
+      yPos += 5; // Razmak između pozicija
+    });
+
+    // --- OSTATAK UGOVORA (Ovdje ubaci svoj standardni tekst) ---
+    yPos += 10;
+    doc.text("Clanak 2.", 20, yPos); yPos += 7;
+    // doc.text("Ovdje ide tvoj dugacki tekst ugovora...", 20, yPos);
+    
+    // Na kraju možeš dodati mjesta za potpis
+    yPos += 40;
+    doc.text("Za Agenciju:", 40, yPos);
+    doc.text("Za Narucitelja:", 140, yPos);
+
+    // Spremanje dokumenta
+    const imeDatoteke = `Ugovor_${klijent.naziv_tvrtke.replace(/\s+/g, '_')}.pdf`;
+    doc.save(imeDatoteke);
+    
+    setToastPoruka({ tip: 'uspjeh', tekst: 'Ugovor je uspješno generiran!' });
+  };
+
   const otvorenePozicije = pozicije.filter(
     (pozicija) => normalizirajStatusPotrebe(pozicija.status) === 'Otvoreno'
   );
@@ -120,14 +181,39 @@ export default function KlijentDetaljiPage() {
     (pozicija) => normalizirajStatusPotrebe(pozicija.status) === 'Zatvoreno'
   );
 
+  const togglePozicija = (id: string) => {
+    setOdabranePozicije((prev) =>
+      prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
+    );
+  };
+
   const renderPotrebeKartice = (listaPotreba: Pozicija[]) => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {listaPotreba.map((pozicija) => {
         const statusPotrebe = normalizirajStatusPotrebe(pozicija.status);
         const avansPostotak = pozicija.avans_postotak ?? 0;
+        const jeOdabrana = odabranePozicije.includes(pozicija.id);
 
         return (
-          <div key={pozicija.id} className="bg-white dark:bg-[#0A2B50] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 hover:border-brand-yellow/50 dark:hover:border-brand-yellow/50 transition-all group relative overflow-hidden">
+          <div
+            key={pozicija.id}
+            className={`bg-white dark:bg-[#0A2B50] rounded-2xl p-6 shadow-sm border hover:border-brand-yellow/50 dark:hover:border-brand-yellow/50 transition-all group relative overflow-hidden ${
+              jeOdabrana
+                ? 'border-brand-yellow dark:border-brand-yellow/80 ring-2 ring-brand-yellow/20'
+                : 'border-gray-100 dark:border-gray-800'
+            }`}
+          >
+            <div className="absolute top-6 left-6">
+              <input
+                type="checkbox"
+                checked={jeOdabrana}
+                onChange={() => togglePozicija(pozicija.id)}
+                className="w-4 h-4 rounded border-gray-300 text-brand-navy focus:ring-brand-navy cursor-pointer"
+                title="Odaberi za ugovor"
+                aria-label={`Odaberi poziciju ${pozicija.naziv_pozicije} za ugovor`}
+              />
+            </div>
+
             <div className="absolute top-6 right-6">
               <select
                 value={statusPotrebe}
@@ -138,13 +224,8 @@ export default function KlijentDetaljiPage() {
                 <option value="Zatvoreno">Zatvoreno</option>
               </select>
             </div>
-            <h3 className="text-xl font-bold mb-5 pr-36">
-              <Link
-                href={`/pozicije/${pozicija.id}`}
-                className="text-brand-navy dark:text-white hover:text-brand-yellow transition-colors"
-              >
-                {pozicija.naziv_pozicije}
-              </Link>
+            <h3 className="text-xl font-bold text-brand-navy dark:text-white mb-5 pl-8 pr-36">
+              {pozicija.naziv_pozicije}
             </h3>
             <div className="space-y-3 mb-6">
               <div className="flex items-center gap-3 text-sm">
@@ -184,6 +265,7 @@ export default function KlijentDetaljiPage() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+              <th className="py-4 px-6 w-10"></th>
               <th className="py-4 px-6">Radno mjesto</th>
               <th className="py-4 px-6">Status</th>
               <th className="py-4 px-6 text-center">Broj radnika</th>
@@ -197,9 +279,19 @@ export default function KlijentDetaljiPage() {
             {listaPotreba.map((pozicija) => {
               const statusPotrebe = normalizirajStatusPotrebe(pozicija.status);
               const avansPostotak = pozicija.avans_postotak ?? 0;
+              const jeOdabrana = odabranePozicije.includes(pozicija.id); // NOVO: Provjera je li označeno
 
               return (
-                <tr key={pozicija.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
+                <tr key={pozicija.id} className={`hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group ${jeOdabrana ? 'bg-blue-50/30 dark:bg-yellow-900/10' : ''}`}>
+                  <td className="py-4 px-6">
+                    <input 
+                      type="checkbox" 
+                      checked={jeOdabrana}
+                      onChange={() => togglePozicija(pozicija.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-brand-navy focus:ring-brand-navy cursor-pointer"
+                      title="Odaberi za ugovor"
+                    />
+                  </td>
                   <td className="py-4 px-6 font-semibold">
                     <Link
                       href={`/pozicije/${pozicija.id}`}
@@ -323,6 +415,15 @@ export default function KlijentDetaljiPage() {
           
           {/* Kontrole: Prekidač prikaza + Gumb za dodavanje */}
           <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* NOVI GUMB ZA UGOVOR */}
+  {odabranePozicije.length > 0 && (
+    <button 
+      onClick={generirajUgovorPDF}
+      className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-brand-navy hover:bg-[#07213E] dark:bg-brand-yellow dark:hover:bg-yellow-500 text-white dark:text-brand-navy px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm"
+    >
+      <FileText size={20} /> Generiraj ugovor ({odabranePozicije.length})
+    </button>
+  )}
             {pozicije.length > 0 && (
               <div className="flex bg-white dark:bg-[#0A2B50] rounded-xl p-1 border border-gray-200 dark:border-gray-800 shadow-sm">
                 <button
