@@ -1,0 +1,70 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@11.3.0
+2 info using node@v22.15.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/luka/Documents/DEV/hr-agencija/.npmrc
+5 silly config load:file:/Users/luka/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm install
+8 verbose argv "install" "--package-lock-only" "--cache" ".npm-cache" "--no-audit" "--no-fund" "--omit" "optional"
+9 verbose logfile logs-max:10 dir:/Users/luka/Documents/DEV/hr-agencija/.npm-cache/_logs/2026-02-22T23_06_44_590Z-
+10 verbose logfile /Users/luka/Documents/DEV/hr-agencija/.npm-cache/_logs/2026-02-22T23_06_44_590Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 silly fetch manifest eslint@^9.0.0
+15 silly packumentCache full:https://registry.npmjs.org/eslint cache-miss
+16 http fetch GET https://registry.npmjs.org/eslint attempt 1 failed with ENOTFOUND
+17 http fetch GET https://registry.npmjs.org/eslint attempt 2 failed with ENOTFOUND
+18 http fetch GET https://registry.npmjs.org/eslint attempt 3 failed with ENOTFOUND
+19 silly placeDep ROOT eslint@ REPLACE for: hr-agencija@0.1.0 want: ^9.0.0
+20 warn ERESOLVE overriding peer dependency {
+20 warn ERESOLVE   code: 'ERESOLVE',
+20 warn ERESOLVE   edge: {
+20 warn ERESOLVE     type: 'peer',
+20 warn ERESOLVE     name: 'eslint',
+20 warn ERESOLVE     spec: '>=9.0.0',
+20 warn ERESOLVE     error: 'INVALID',
+20 warn ERESOLVE     from: {
+20 warn ERESOLVE       name: 'eslint-config-next',
+20 warn ERESOLVE       version: '16.1.6',
+20 warn ERESOLVE       location: 'node_modules/eslint-config-next',
+20 warn ERESOLVE       isWorkspace: false,
+20 warn ERESOLVE       dependents: [Array]
+20 warn ERESOLVE     }
+20 warn ERESOLVE   },
+20 warn ERESOLVE   dep: {
+20 warn ERESOLVE     name: 'eslint',
+20 warn ERESOLVE     version: undefined,
+20 warn ERESOLVE     errors: [ [FetchError] ],
+20 warn ERESOLVE     package: {},
+20 warn ERESOLVE     whileInstalling: {
+20 warn ERESOLVE       name: 'hr-agencija',
+20 warn ERESOLVE       version: '0.1.0',
+20 warn ERESOLVE       path: '/Users/luka/Documents/DEV/hr-agencija'
+20 warn ERESOLVE     },
+20 warn ERESOLVE     location: 'node_modules/eslint',
+20 warn ERESOLVE     isWorkspace: false,
+20 warn ERESOLVE     dependents: [ [Object] ]
+20 warn ERESOLVE   },
+20 warn ERESOLVE   force: false,
+20 warn ERESOLVE   isMine: true,
+20 warn ERESOLVE   strictPeerDeps: false,
+20 warn ERESOLVE   current: {
+20 warn ERESOLVE     name: 'eslint',
+20 warn ERESOLVE     version: '8.57.1',
+20 warn ERESOLVE     location: 'node_modules/eslint',
+20 warn ERESOLVE     isWorkspace: false,
+20 warn ERESOLVE     dependents: [
+20 warn ERESOLVE       [Object], [Object],
+20 warn ERESOLVE       [Object], [Object],
+20 warn ERESOLVE       [Object], [Object],
+20 warn ERESOLVE       [Object], [Object],
+20 warn ERESOLVE       [Object], [Object],
+20 warn ERESOLVE       [Object], [Object]
+20 warn ERESOLVE     ]
+20 warn ERESOLVE   }
+20 warn ERESOLVE }
+21 http cache https://registry.npmjs.org/@tailwindcss/oxide-wasm32-wasi/-/oxide-wasm32-wasi-4.2.0.tgz 0ms (cache hit)
+22 silly tarball no local data for https://registry.npmjs.org/@tailwindcss/oxide-wasm32-wasi/-/oxide-wasm32-wasi-4.2.0.tgz. Extracting by manifest.
+23 http fetch GET https://registry.npmjs.org/@tailwindcss/oxide-wasm32-wasi/-/oxide-wasm32-wasi-4.2.0.tgz attempt 1 failed with ENOTFOUND
