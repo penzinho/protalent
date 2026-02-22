@@ -34,6 +34,10 @@ const SELECT_POZICIJE_WITH_TIP_RADNIKA =
   'id, klijent_id, naziv_pozicije, broj_izvrsitelja, datum_upisa, tip_radnika, cijena_po_kandidatu, avans_dogovoren, avans_postotak, status';
 const SELECT_POZICIJE_BEZ_TIPA_RADNIKA =
   'id, klijent_id, naziv_pozicije, broj_izvrsitelja, datum_upisa, cijena_po_kandidatu, avans_dogovoren, avans_postotak, status';
+const SELECT_KLIJENT_SA_EMAILOM =
+  'id, naziv_tvrtke, skraceni_naziv, industrija, oib, mbs, ulica, grad, email_ugovori';
+const SELECT_KLIJENT_BEZ_EMAILA =
+  'id, naziv_tvrtke, skraceni_naziv, industrija, oib, mbs, ulica, grad';
 
 const parseCount = (value: number | string | null): number => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -86,6 +90,19 @@ const jeNedostupnaRelacijaNacionalnosti = (error: unknown): boolean => {
     code === 'PGRST200' ||
     text.includes('pozicije_nacionalnosti') ||
     text.includes('nacionalnosti_radnika')
+  );
+};
+
+const jeNepostojecaKolonaEmailUgovori = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
+  const payload = error as { code?: string | null; message?: string | null; details?: string | null };
+  const code = String(payload.code || '');
+  const text = `${payload.message || ''} ${payload.details || ''}`.toLowerCase();
+
+  return (
+    code === '42703' ||
+    (text.includes('email_ugovori') &&
+      (text.includes('does not exist') || text.includes('could not find')))
   );
 };
 
@@ -165,12 +182,6 @@ const mapPozicija = (row: Record<string, unknown>): PozicijaDetalji => ({
 export async function dohvatiKlijentaDetalje(id: string): Promise<KlijentDetaljiResult> {
   const supabase = createSupabaseServerClient();
 
-  const klijentPromise = supabase
-    .from('klijenti')
-    .select('id, naziv_tvrtke, skraceni_naziv, industrija, oib, mbs, ulica, grad')
-    .eq('id', id)
-    .single();
-
   let pozicijeRes = (await supabase
     .from('pozicije')
     .select(SELECT_POZICIJE_SA_SVIM_NACIONALNOSTIMA)
@@ -193,7 +204,19 @@ export async function dohvatiKlijentaDetalje(id: string): Promise<KlijentDetalji
       .order('created_at', { ascending: false })) as unknown as PozicijeQueryResult;
   }
 
-  const klijentRes = await klijentPromise;
+  let klijentRes = await supabase
+    .from('klijenti')
+    .select(SELECT_KLIJENT_SA_EMAILOM)
+    .eq('id', id)
+    .single();
+
+  if (klijentRes.error && jeNepostojecaKolonaEmailUgovori(klijentRes.error)) {
+    klijentRes = await supabase
+      .from('klijenti')
+      .select(SELECT_KLIJENT_BEZ_EMAILA)
+      .eq('id', id)
+      .single();
+  }
 
   if (klijentRes.error || pozicijeRes.error) {
     console.error(
@@ -205,7 +228,15 @@ export async function dohvatiKlijentaDetalje(id: string): Promise<KlijentDetalji
   }
 
   return {
-    klijent: (klijentRes.data as KlijentDetalji | null) ?? null,
+    klijent: klijentRes.data
+      ? ({
+          ...(klijentRes.data as KlijentDetalji),
+          email_ugovori:
+            typeof (klijentRes.data as { email_ugovori?: unknown }).email_ugovori === 'string'
+              ? String((klijentRes.data as { email_ugovori?: string }).email_ugovori)
+              : null,
+        } as KlijentDetalji)
+      : null,
     pozicije: (pozicijeRes.data || []).map(mapPozicija),
     greska: null,
   };

@@ -29,6 +29,7 @@ export interface KlijentDetalji {
   mbs: string | null;
   ulica: string | null;
   grad: string | null;
+  email_ugovori: string | null;
 }
 
 export interface PozicijaDetalji {
@@ -43,4 +44,31 @@ export interface PozicijaDetalji {
   avans_dogovoren: boolean;
   avans_postotak: number | null;
   status: string | null;
+}
+
+export interface UgovorDokument {
+  id: string;
+  klijent_id: string;
+  naziv_datoteke: string;
+  mime_type: string;
+  drive_file_id: string;
+  drive_web_view_link: string | null;
+  drive_download_link: string | null;
+  pozicije_ids: string[];
+  pozicije_nazivi: string[];
+  lokacije?: UgovorDokumentLokacija[];
+  created_at: string;
+}
+
+export interface UgovorDokumentLokacija {
+  id: string;
+  ugovor_id: string;
+  pozicija_id: string;
+  datum_upisa: string | null;
+  drive_file_id: string;
+  drive_web_view_link: string | null;
+  drive_download_link: string | null;
+  folder_name: string;
+  created_at: string;
+  pozicija_naziv?: string;
 }

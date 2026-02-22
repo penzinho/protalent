@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Building2, MapPin, Briefcase, Plus, ArrowLeft, Calendar, Euro, Percent, Users, LayoutGrid, List, FileText, Globe } from 'lucide-react';
+import { Building2, MapPin, Briefcase, Plus, ArrowLeft, Calendar, Euro, Percent, Users, LayoutGrid, List, FileText, Globe, Send } from 'lucide-react';
 import DodajPozicijuModal from '@/components/DodajPozicijuModal';
 import Link from 'next/link';
-import { generirajUgovorPdf } from '@/lib/pdf/generirajUgovorPdf';
-import type { KlijentDetalji, PozicijaDetalji } from '@/lib/types/klijenti';
+import { generirajUgovorPdfDatoteka } from '@/lib/pdf/generirajUgovorPdf';
+import type { KlijentDetalji, PozicijaDetalji, UgovorDokument } from '@/lib/types/klijenti';
 import { revalidateCachePaths } from '@/lib/client/revalidateCache';
+import PosaljiUgovorModal from '@/components/klijenti/PosaljiUgovorModal';
 
 // Pomoćna funkcija za striktni HR format datuma
 const formatirajDatum = (datumString: string) => {
@@ -48,6 +49,15 @@ const formatirajNacionalnosti = (nacionalnosti?: string[] | null) => {
   return nacionalnosti.join(', ');
 };
 
+const bytesToBase64 = (bytes: Uint8Array): string => {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return window.btoa(binary);
+};
+
 const PRIKAZ_POTREBA_STORAGE_KEY = 'hr-klijent-potrebe-prikaz';
 
 interface ToastPoruka {
@@ -75,6 +85,12 @@ export default function KlijentDetaljiClientView({
   const [modalOtvoren, setModalOtvoren] = useState(false);
   const [toastPoruka, setToastPoruka] = useState<ToastPoruka | null>(null);
   const [odabranePozicije, setOdabranePozicije] = useState<string[]>([]);
+  const [ugovori, setUgovori] = useState<UgovorDokument[]>([]);
+  const [ucitavanjeUgovora, setUcitavanjeUgovora] = useState(false);
+  const [modalPosaljiOtvoren, setModalPosaljiOtvoren] = useState(false);
+  const [odabraniUgovorZaSlanje, setOdabraniUgovorZaSlanje] = useState<string | null>(null);
+  const [emailUgovori, setEmailUgovori] = useState(klijent?.email_ugovori || '');
+  const [spremanjeEmaila, setSpremanjeEmaila] = useState(false);
   
   const [prikaz, setPrikaz] = useState<'cards' | 'table'>(() => {
     if (typeof window === 'undefined') return 'cards';
@@ -91,6 +107,31 @@ export default function KlijentDetaljiClientView({
     setPozicije(initialPozicije);
     setOdabranePozicije((trenutne) => trenutne.filter((pozicijaId) => initialPozicije.some((p) => p.id === pozicijaId)));
   }, [initialPozicije]);
+
+  useEffect(() => {
+    setEmailUgovori(klijent?.email_ugovori || '');
+  }, [klijent?.email_ugovori]);
+
+  const dohvatiUgovore = async () => {
+    setUcitavanjeUgovora(true);
+    try {
+      const response = await fetch(`/api/ugovori?klijentId=${encodeURIComponent(id)}`);
+      const data = (await response.json()) as { ugovori?: UgovorDokument[] };
+      if (!response.ok) {
+        throw new Error('Ne mogu dohvatiti ugovore.');
+      }
+      setUgovori(data.ugovori || []);
+    } catch (error) {
+      console.error(error);
+      setToastPoruka({ tip: 'greska', tekst: 'Ne mogu dohvatiti datoteke ugovora.' });
+    } finally {
+      setUcitavanjeUgovora(false);
+    }
+  };
+
+  useEffect(() => {
+    void dohvatiUgovore();
+  }, [id]);
 
   const promijeniStatusPotrebe = async (pozicijaId: string, noviStatus: 'Otvoreno' | 'Zatvoreno') => {
     const prethodnePozicije = pozicije;
@@ -129,7 +170,7 @@ export default function KlijentDetaljiClientView({
     const pozicijeZaUgovor = pozicije.filter((pozicija) => odabranePozicije.includes(pozicija.id));
 
     try {
-      await generirajUgovorPdf({
+      const rezultat = await generirajUgovorPdfDatoteka({
         klijent: {
           nazivTvrtke: klijent.naziv_tvrtke,
           oib: klijent.oib,
@@ -143,14 +184,58 @@ export default function KlijentDetaljiClientView({
           avansDogovoren: pozicija.avans_dogovoren,
           avansPostotak: pozicija.avans_postotak,
         })),
+        spremiLokalno: false,
       });
 
-      setToastPoruka({ tip: 'uspjeh', tekst: 'Ugovor je uspješno generiran!' });
+      const response = await fetch('/api/ugovori/spremi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          klijentId: id,
+          pozicijaIds: pozicijeZaUgovor.map((pozicija) => pozicija.id),
+          nazivDatoteke: rezultat.nazivDatoteke,
+          pdfBase64: bytesToBase64(rezultat.pdfBytes),
+        }),
+      });
+
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || 'Spremanje ugovora nije uspjelo.');
+      }
+
+      setToastPoruka({ tip: 'uspjeh', tekst: 'Ugovor je generiran i spremljen u datoteke.' });
       setOdabranePozicije([]);
+      await dohvatiUgovore();
     } catch (error) {
       console.error('Greška pri generiranju ugovora:', error);
-      setToastPoruka({ tip: 'greska', tekst: 'Došlo je do greške pri generiranju PDF ugovora.' });
+      setToastPoruka({
+        tip: 'greska',
+        tekst:
+          error instanceof Error
+            ? error.message
+            : 'Došlo je do greške pri generiranju i spremanju PDF ugovora.',
+      });
     }
+  };
+
+  const spremiEmailZaUgovore = async () => {
+    if (!klijent) return;
+    setSpremanjeEmaila(true);
+    const vrijednost = emailUgovori.trim();
+    const { error } = await supabase
+      .from('klijenti')
+      .update({ email_ugovori: vrijednost || null })
+      .eq('id', klijent.id);
+
+    if (error) {
+      setToastPoruka({ tip: 'greska', tekst: 'Ne mogu spremiti email za ugovore.' });
+      setSpremanjeEmaila(false);
+      return;
+    }
+
+    setToastPoruka({ tip: 'uspjeh', tekst: 'Email za ugovore je spremljen.' });
+    setSpremanjeEmaila(false);
+    router.refresh();
   };
 
   const otvorenePozicije = pozicije.filter(
@@ -396,6 +481,29 @@ export default function KlijentDetaljiClientView({
               <p className="font-medium text-brand-navy dark:text-gray-200">{klijent.grad}</p>
             </div>
           </div>
+          <div className="flex gap-4">
+            <div className="p-3 bg-gray-50 dark:bg-[#05182d] rounded-xl text-brand-yellow h-fit"><FileText size={24} /></div>
+            <div className="w-full">
+              <p className="text-sm text-gray-400 dark:text-gray-500 font-semibold uppercase tracking-wider">Email za ugovore</p>
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="email"
+                  value={emailUgovori}
+                  onChange={(e) => setEmailUgovori(e.target.value)}
+                  placeholder="pravna@tvrtka.hr"
+                  className="flex-1 px-3 py-2 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-brand-yellow outline-none transition-all text-sm text-brand-navy dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => void spremiEmailZaUgovore()}
+                  disabled={spremanjeEmaila}
+                  className="px-3 py-2 text-sm rounded-lg bg-brand-orange hover:bg-brand-yellow text-white transition-colors disabled:opacity-60"
+                >
+                  {spremanjeEmaila ? 'Spremam...' : 'Spremi'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -506,6 +614,104 @@ export default function KlijentDetaljiClientView({
         )}
       </div>
 
+      <div>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+          <div>
+            <h2 className="text-2xl font-bold text-brand-navy dark:text-white flex items-center gap-2">
+              <FileText className="text-brand-yellow" /> Datoteke
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Generirani ugovori za ovog klijenta</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setOdabraniUgovorZaSlanje(ugovori[0]?.id || null);
+              setModalPosaljiOtvoren(true);
+            }}
+            disabled={ugovori.length === 0}
+            className="flex items-center gap-2 bg-brand-navy hover:bg-[#07213E] dark:bg-brand-yellow dark:hover:bg-yellow-500 text-white dark:text-brand-navy px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm disabled:opacity-50"
+          >
+            <Send size={18} /> Pošalji ugovor
+          </button>
+        </div>
+
+        <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
+          {ucitavanjeUgovora ? (
+            <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Učitavam ugovore...</div>
+          ) : ugovori.length === 0 ? (
+            <div className="p-6 text-sm text-gray-500 dark:text-gray-400">
+              Još nema spremljenih ugovora. Generiraj ugovor iz odabranih potreba.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                    <th className="py-4 px-6">Naziv</th>
+                    <th className="py-4 px-6">Povezane pozicije</th>
+                    <th className="py-4 px-6">Datum</th>
+                    <th className="py-4 px-6 text-right">Akcije</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {ugovori.map((ugovor) => {
+                    const pregledLink =
+                      ugovor.drive_web_view_link ||
+                      `https://drive.google.com/file/d/${encodeURIComponent(ugovor.drive_file_id)}/view`;
+                    const preuzmiLink =
+                      ugovor.drive_download_link ||
+                      `https://drive.google.com/uc?export=download&id=${encodeURIComponent(ugovor.drive_file_id)}`;
+                    return (
+                      <tr key={ugovor.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors">
+                        <td className="py-4 px-6 font-semibold text-brand-navy dark:text-white">
+                          {ugovor.naziv_datoteke}
+                        </td>
+                        <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">
+                          {ugovor.pozicije_nazivi?.length ? ugovor.pozicije_nazivi.join(', ') : '-'}
+                        </td>
+                        <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">
+                          {formatirajDatum(ugovor.created_at)}
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex justify-end gap-4 text-sm">
+                            <a
+                              href={pregledLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-brand-navy dark:text-white hover:text-brand-orange transition-colors"
+                            >
+                              Pregled
+                            </a>
+                            <a
+                              href={preuzmiLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-brand-navy dark:text-white hover:text-brand-orange transition-colors"
+                            >
+                              Preuzmi
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOdabraniUgovorZaSlanje(ugovor.id);
+                                setModalPosaljiOtvoren(true);
+                              }}
+                              className="text-brand-yellow hover:text-brand-orange font-medium transition-colors"
+                            >
+                              Pošalji ugovor
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
       {modalOtvoren && (
         <DodajPozicijuModal 
           klijentId={id}
@@ -513,6 +719,17 @@ export default function KlijentDetaljiClientView({
           osvjeziListu={() => router.refresh()} 
         />
       )}
+      <PosaljiUgovorModal
+        otvoren={modalPosaljiOtvoren}
+        zatvoriModal={() => setModalPosaljiOtvoren(false)}
+        ugovori={ugovori}
+        klijentNaziv={klijent.naziv_tvrtke}
+        defaultTo={emailUgovori}
+        odabraniUgovorId={odabraniUgovorZaSlanje}
+        onPoslano={() => {
+          setToastPoruka({ tip: 'uspjeh', tekst: 'Ugovor je uspješno poslan.' });
+        }}
+      />
     </div>
   );
 }

@@ -206,7 +206,7 @@ export default function Sidebar() {
       <aside
         className={`${
           stisnut ? 'w-20' : 'w-64'
-        } hidden md:flex bg-white dark:bg-[#05182d] min-h-screen flex-col border-r border-gray-200 dark:border-brand-navy shadow-sm transition-[width,colors] duration-300 shrink-0`}
+        } hidden md:flex md:sticky md:top-0 h-screen overflow-y-auto bg-white dark:bg-[#05182d] flex-col border-r border-gray-200 dark:border-brand-navy shadow-sm transition-[width,colors] duration-300 shrink-0`}
       >
         <div className={`mb-8 py-6 border-b border-gray-100 dark:border-gray-800/50 ${stisnut ? 'px-3' : 'px-6'}`}>
           <div className={`${stisnut ? 'pt-4 flex justify-center' : ''}`}>{renderLogo(stisnut)}</div>

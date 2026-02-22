@@ -27,6 +27,11 @@ interface GenerirajUgovorPdfOpcije {
   nazivDatoteke?: string;
 }
 
+export interface GeneriraniUgovorPdf {
+  nazivDatoteke: string;
+  pdfBytes: Uint8Array;
+}
+
 const FONT_OBITELJ = 'OpenSans';
 const GORNJA_MARGINA = 20;
 const DONJA_MARGINA = 280;
@@ -162,11 +167,12 @@ const generirajNazivDatoteke = (klijent: UgovorKlijent, pozicije: UgovorPozicija
   return `Ugovor_${klijentDio}.pdf`;
 };
 
-export const generirajUgovorPdf = async ({
+export const generirajUgovorPdfDatoteka = async ({
   klijent,
   pozicije,
   nazivDatoteke,
-}: GenerirajUgovorPdfOpcije): Promise<string> => {
+  spremiLokalno = false,
+}: GenerirajUgovorPdfOpcije & { spremiLokalno?: boolean }): Promise<GeneriraniUgovorPdf> => {
   if (!pozicije.length) {
     throw new Error('Nema odabranih pozicija za ugovor.');
   }
@@ -338,6 +344,23 @@ export const generirajUgovorPdf = async ({
   }
 
   const zavrsniNazivDatoteke = nazivDatoteke || generirajNazivDatoteke(klijent, pozicije);
-  doc.save(zavrsniNazivDatoteke);
-  return zavrsniNazivDatoteke;
+  const pdfArrayBuffer = doc.output('arraybuffer');
+  const pdfBytes = new Uint8Array(pdfArrayBuffer);
+
+  if (spremiLokalno) {
+    doc.save(zavrsniNazivDatoteke);
+  }
+
+  return {
+    nazivDatoteke: zavrsniNazivDatoteke,
+    pdfBytes,
+  };
+};
+
+export const generirajUgovorPdf = async (opcije: GenerirajUgovorPdfOpcije): Promise<string> => {
+  const rezultat = await generirajUgovorPdfDatoteka({
+    ...opcije,
+    spremiLokalno: true,
+  });
+  return rezultat.nazivDatoteke;
 };

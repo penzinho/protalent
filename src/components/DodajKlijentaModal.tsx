@@ -25,6 +25,7 @@ export default function DodajKlijentaModal({ zatvoriModal, osvjeziListu }: Props
     ulica: '',
     grad: '',
     industrija: 'Proizvodnja',
+    email_ugovori: '',
   });
 
   const dohvatiPodatke = async () => {
@@ -134,6 +135,19 @@ export default function DodajKlijentaModal({ zatvoriModal, osvjeziListu }: Props
                 <option value="Prijevoz">Prijevoz</option>
                 <option value="Logistika">Logistika</option>
               </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">
+                Email za ugovore
+              </label>
+              <input
+                type="email"
+                placeholder="npr. pravna@tvrtka.hr"
+                value={formData.email_ugovori}
+                onChange={(e) => setFormData({ ...formData, email_ugovori: e.target.value })}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
