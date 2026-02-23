@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Building2, MapPin, Briefcase, Plus, ArrowLeft, Calendar, Euro, Percent, Users, LayoutGrid, List, FileText, Globe, Send } from 'lucide-react';
+import { Building2, MapPin, Briefcase, Plus, ArrowLeft, Calendar, Euro, Percent, Users, LayoutGrid, List, FileText, Globe, Send, History, Trash2, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import DodajPozicijuModal from '@/components/DodajPozicijuModal';
 import Link from 'next/link';
 import { generirajUgovorPdfDatoteka } from '@/lib/pdf/generirajUgovorPdf';
-import type { KlijentDetalji, PozicijaDetalji, UgovorDokument } from '@/lib/types/klijenti';
+import type { KlijentAktivnost, KlijentDetalji, PozicijaDetalji, UgovorDokument } from '@/lib/types/klijenti';
 import { revalidateCachePaths } from '@/lib/client/revalidateCache';
 import PosaljiUgovorModal from '@/components/klijenti/PosaljiUgovorModal';
 
@@ -19,6 +19,17 @@ const formatirajDatum = (datumString: string) => {
   const mjesec = (d.getMonth() + 1).toString().padStart(2, '0');
   const godina = d.getFullYear();
   return `${dan}.${mjesec}.${godina}.`;
+};
+
+const formatirajDatumVrijeme = (datumString: string) => {
+  if (!datumString) return '-';
+  const d = new Date(datumString);
+  const dan = d.getDate().toString().padStart(2, '0');
+  const mjesec = (d.getMonth() + 1).toString().padStart(2, '0');
+  const godina = d.getFullYear();
+  const sati = d.getHours().toString().padStart(2, '0');
+  const minute = d.getMinutes().toString().padStart(2, '0');
+  return `${dan}.${mjesec}.${godina}. ${sati}:${minute}`;
 };
 
 const normalizirajStatusPotrebe = (status?: string | null) => {
@@ -65,6 +76,16 @@ interface ToastPoruka {
   tekst: string;
 }
 
+interface UgovoriResponse {
+  ugovori?: UgovorDokument[];
+  error?: string;
+}
+
+interface AktivnostiResponse {
+  aktivnosti?: KlijentAktivnost[];
+  error?: string;
+}
+
 interface Props {
   id: string;
   initialKlijent: KlijentDetalji | null;
@@ -87,8 +108,12 @@ export default function KlijentDetaljiClientView({
   const [odabranePozicije, setOdabranePozicije] = useState<string[]>([]);
   const [ugovori, setUgovori] = useState<UgovorDokument[]>([]);
   const [ucitavanjeUgovora, setUcitavanjeUgovora] = useState(false);
+  const [brisanjeUgovoraId, setBrisanjeUgovoraId] = useState<string | null>(null);
   const [modalPosaljiOtvoren, setModalPosaljiOtvoren] = useState(false);
   const [odabraniUgovorZaSlanje, setOdabraniUgovorZaSlanje] = useState<string | null>(null);
+  const [aktivnosti, setAktivnosti] = useState<KlijentAktivnost[]>([]);
+  const [ucitavanjeAktivnosti, setUcitavanjeAktivnosti] = useState(false);
+  const [logOtvoren, setLogOtvoren] = useState(false);
   const [emailUgovori, setEmailUgovori] = useState(klijent?.email_ugovori || '');
   const [spremanjeEmaila, setSpremanjeEmaila] = useState(false);
   
@@ -116,9 +141,9 @@ export default function KlijentDetaljiClientView({
     setUcitavanjeUgovora(true);
     try {
       const response = await fetch(`/api/ugovori?klijentId=${encodeURIComponent(id)}`);
-      const data = (await response.json()) as { ugovori?: UgovorDokument[] };
+      const data = (await response.json()) as UgovoriResponse;
       if (!response.ok) {
-        throw new Error('Ne mogu dohvatiti ugovore.');
+        throw new Error(data.error || 'Ne mogu dohvatiti ugovore.');
       }
       setUgovori(data.ugovori || []);
     } catch (error) {
@@ -129,9 +154,61 @@ export default function KlijentDetaljiClientView({
     }
   };
 
+  const dohvatiAktivnosti = async () => {
+    setUcitavanjeAktivnosti(true);
+    try {
+      const response = await fetch(`/api/klijenti/${encodeURIComponent(id)}/aktivnosti`);
+      const data = (await response.json()) as AktivnostiResponse;
+      if (!response.ok) {
+        throw new Error(data.error || 'Ne mogu dohvatiti aktivnosti.');
+      }
+      setAktivnosti(data.aktivnosti || []);
+    } catch (error) {
+      console.error(error);
+      setToastPoruka({ tip: 'greska', tekst: 'Ne mogu dohvatiti log aktivnosti.' });
+    } finally {
+      setUcitavanjeAktivnosti(false);
+    }
+  };
+
   useEffect(() => {
     void dohvatiUgovore();
+    void dohvatiAktivnosti();
   }, [id]);
+
+  const obrisiUgovor = async (ugovorId: string) => {
+    const ugovor = ugovori.find((stavka) => stavka.id === ugovorId);
+    const confirmed = window.confirm(
+      `Jeste li sigurni da zelite obrisati ugovor${ugovor?.naziv_datoteke ? ` "${ugovor.naziv_datoteke}"` : ''}?`
+    );
+    if (!confirmed) return;
+
+    setBrisanjeUgovoraId(ugovorId);
+    try {
+      const response = await fetch(`/api/ugovori/${encodeURIComponent(ugovorId)}`, {
+        method: 'DELETE',
+      });
+      const payload = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || 'Brisanje ugovora nije uspjelo.');
+      }
+
+      if (odabraniUgovorZaSlanje === ugovorId) {
+        setOdabraniUgovorZaSlanje(null);
+      }
+      setToastPoruka({ tip: 'uspjeh', tekst: 'Ugovor je obrisan iz aplikacije i Google Drivea.' });
+      await dohvatiUgovore();
+      await dohvatiAktivnosti();
+    } catch (error) {
+      console.error('Greska pri brisanju ugovora:', error);
+      setToastPoruka({
+        tip: 'greska',
+        tekst: error instanceof Error ? error.message : 'Ne mogu obrisati ugovor.',
+      });
+    } finally {
+      setBrisanjeUgovoraId(null);
+    }
+  };
 
   const promijeniStatusPotrebe = async (pozicijaId: string, noviStatus: 'Otvoreno' | 'Zatvoreno') => {
     const prethodnePozicije = pozicije;
@@ -206,6 +283,7 @@ export default function KlijentDetaljiClientView({
       setToastPoruka({ tip: 'uspjeh', tekst: 'Ugovor je generiran i spremljen u datoteke.' });
       setOdabranePozicije([]);
       await dohvatiUgovore();
+      await dohvatiAktivnosti();
     } catch (error) {
       console.error('Greška pri generiranju ugovora:', error);
       setToastPoruka({
@@ -249,6 +327,11 @@ export default function KlijentDetaljiClientView({
     setOdabranePozicije(prev => 
       prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
     );
+  };
+
+  const osvjeziNakonPromjenePotreba = () => {
+    router.refresh();
+    void dohvatiAktivnosti();
   };
 
   const renderPotrebeKartice = (listaPotreba: PozicijaDetalji[]) => (
@@ -673,12 +756,12 @@ export default function KlijentDetaljiClientView({
                           {formatirajDatum(ugovor.created_at)}
                         </td>
                         <td className="py-4 px-6">
-                          <div className="flex justify-end gap-4 text-sm">
+                          <div className="flex justify-end gap-2 text-sm">
                             <a
                               href={pregledLink}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-brand-navy dark:text-white hover:text-brand-orange transition-colors"
+                              className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#05182d] text-brand-navy dark:text-white hover:text-brand-orange transition-colors"
                             >
                               Pregled
                             </a>
@@ -686,8 +769,9 @@ export default function KlijentDetaljiClientView({
                               href={preuzmiLink}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-brand-navy dark:text-white hover:text-brand-orange transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#05182d] text-brand-navy dark:text-white hover:text-brand-orange transition-colors"
                             >
+                              <Download size={13} />
                               Preuzmi
                             </a>
                             <button
@@ -696,9 +780,18 @@ export default function KlijentDetaljiClientView({
                                 setOdabraniUgovorZaSlanje(ugovor.id);
                                 setModalPosaljiOtvoren(true);
                               }}
-                              className="text-brand-yellow hover:text-brand-orange font-medium transition-colors"
+                              className="inline-flex items-center px-3 py-1.5 rounded-lg bg-brand-navy/10 dark:bg-brand-yellow/15 text-brand-navy dark:text-brand-yellow hover:text-brand-orange transition-colors font-medium"
                             >
                               Pošalji ugovor
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void obrisiUgovor(ugovor.id)}
+                              disabled={brisanjeUgovoraId === ugovor.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors disabled:opacity-60"
+                            >
+                              <Trash2 size={14} />
+                              {brisanjeUgovoraId === ugovor.id ? 'Brišem...' : 'Obriši'}
                             </button>
                           </div>
                         </td>
@@ -712,11 +805,78 @@ export default function KlijentDetaljiClientView({
         </div>
       </div>
 
+      <div>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <h2 className="text-2xl font-bold text-brand-navy dark:text-white flex items-center gap-2">
+            <History className="text-brand-yellow" /> Log
+          </h2>
+          <button
+            type="button"
+            onClick={() => setLogOtvoren((prethodno) => !prethodno)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#05182d] text-brand-navy dark:text-white hover:text-brand-orange transition-colors text-sm font-medium"
+          >
+            {logOtvoren ? (
+              <>
+                <ChevronDown size={15} />
+                Sakrij log
+              </>
+            ) : (
+              <>
+                <ChevronRight size={15} />
+                Prikaži log
+              </>
+            )}
+          </button>
+        </div>
+        <p className="text-gray-500 dark:text-gray-400 mt-1 mb-4">Aktivnosti nad klijentom, potrebama i ugovorima</p>
+
+        {!logOtvoren ? (
+          <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 text-sm text-gray-500 dark:text-gray-400">
+            Log je skupljen.
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
+            {ucitavanjeAktivnosti ? (
+              <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Učitavam log aktivnosti...</div>
+            ) : aktivnosti.length === 0 ? (
+              <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Još nema zabilježenih aktivnosti.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                      <th className="py-3 px-6">Datum i vrijeme</th>
+                      <th className="py-3 px-6">User</th>
+                      <th className="py-3 px-6">Opis</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {aktivnosti.map((aktivnost) => (
+                      <tr key={aktivnost.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-6 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                          {formatirajDatumVrijeme(aktivnost.event_at)}
+                        </td>
+                        <td className="py-3 px-6">
+                          <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 dark:bg-[#05182d] text-xs text-gray-600 dark:text-gray-300">
+                            {aktivnost.user_label || 'Sustav'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-6 text-sm text-brand-navy dark:text-white">{aktivnost.opis}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {modalOtvoren && (
         <DodajPozicijuModal 
           klijentId={id}
           zatvoriModal={() => setModalOtvoren(false)} 
-          osvjeziListu={() => router.refresh()} 
+          osvjeziListu={osvjeziNakonPromjenePotreba} 
         />
       )}
       <PosaljiUgovorModal
@@ -728,6 +888,7 @@ export default function KlijentDetaljiClientView({
         odabraniUgovorId={odabraniUgovorZaSlanje}
         onPoslano={() => {
           setToastPoruka({ tip: 'uspjeh', tekst: 'Ugovor je uspješno poslan.' });
+          void dohvatiAktivnosti();
         }}
       />
     </div>

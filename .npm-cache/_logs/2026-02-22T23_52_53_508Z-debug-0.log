@@ -1,0 +1,22 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@11.3.0
+2 info using node@v22.15.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/luka/Documents/DEV/hr-agencija/.npmrc
+5 silly config load:file:/Users/luka/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm install
+8 verbose argv "install" "--offline" "--cache" ".npm-cache"
+9 verbose logfile logs-max:10 dir:/Users/luka/Documents/DEV/hr-agencija/.npm-cache/_logs/2026-02-22T23_52_53_508Z-
+10 verbose logfile /Users/luka/Documents/DEV/hr-agencija/.npm-cache/_logs/2026-02-22T23_52_53_508Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 silly reify moves {}
+15 silly audit report null
+16 verbose cwd /Users/luka/Documents/DEV/hr-agencija
+17 verbose os Darwin 25.3.0
+18 verbose node v22.15.0
+19 verbose npm  v11.3.0
+20 verbose exit 0
+21 info ok

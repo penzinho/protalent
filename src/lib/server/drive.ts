@@ -177,6 +177,31 @@ export const downloadDriveFile = async (params: {
   return new Uint8Array(buffer);
 };
 
+export const deleteDriveFile = async (params: {
+  oauthClientId: string;
+  oauthClientSecret: string;
+  oauthRefreshToken: string;
+  fileId: string;
+}): Promise<void> => {
+  const { oauthClientId, oauthClientSecret, oauthRefreshToken, fileId } = params;
+  const accessToken = await getAccessToken({ oauthClientId, oauthClientSecret, oauthRefreshToken });
+  const response = await fetch(`${GOOGLE_DRIVE_FILES_URL}/${encodeURIComponent(fileId)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (response.status === 404) {
+    return;
+  }
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(
+      `Brisanje datoteke na Google Driveu nije uspjelo: ${details || `${response.status} ${response.statusText}`}`
+    );
+  }
+};
+
 export const validateDriveAccess = async (params: {
   oauthClientId: string;
   oauthClientSecret: string;

@@ -72,3 +72,20 @@ export interface UgovorDokumentLokacija {
   created_at: string;
   pozicija_naziv?: string;
 }
+
+export interface KlijentAktivnost {
+  id: string;
+  klijent_id: string;
+  akcija:
+    | 'KLIJENT_DODAN'
+    | 'POTREBA_DODANA'
+    | 'UGOVOR_GENERIRAN'
+    | 'UGOVOR_POSLAN'
+    | 'UGOVOR_OBRISAN'
+    | 'KANDIDAT_DODAN'
+    | 'KANDIDAT_STATUS_PROMIJENJEN';
+  opis: string;
+  user_label: string;
+  event_at: string;
+  metadata?: Record<string, unknown> | null;
+}
