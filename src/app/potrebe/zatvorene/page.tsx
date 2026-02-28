@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { Briefcase, Building2, Users, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTableRow,
+} from '@/components/ui/data-table';
 
 interface KlijentRef {
   id: string;
@@ -194,41 +202,41 @@ export default function ZatvorenePotrebePage() {
       ) : (
         <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                  <th className="py-4 px-6">Radno mjesto</th>
-                  <th className="py-4 px-6 text-center">Potrebe</th>
-                  <th className="py-4 px-6 text-center">Klijenti</th>
-                  <th className="py-4 px-6 text-center">Radnici</th>
-                  <th className="py-4 px-6 text-right">Prosj. cijena</th>
-                  <th className="py-4 px-6 text-right">Akcije</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <DataTable className="w-full text-left border-collapse">
+              <DataTableHeader>
+                <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                  <DataTableHead className="py-4 px-6">Radno mjesto</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-center">Potrebe</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-center">Klijenti</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-center">Radnici</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-right">Prosj. cijena</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-right">Akcije</DataTableHead>
+                </DataTableRow>
+              </DataTableHeader>
+              <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {grupiranePotrebe.map((potreba) => (
-                  <tr key={potreba.kljuc} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
-                    <td className="py-4 px-6">
+                  <DataTableRow key={potreba.kljuc} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
+                    <DataTableCell className="py-4 px-6">
                       <p className="font-bold text-brand-navy dark:text-white">{potreba.naziv}</p>
-                    </td>
-                    <td className="py-4 px-6 text-center text-gray-600 dark:text-gray-300 font-semibold">{potreba.brojPotreba}</td>
-                    <td className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">{potreba.brojKlijenata}</td>
-                    <td className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">{potreba.ukupnoRadnika}</td>
-                    <td className="py-4 px-6 text-right text-brand-navy dark:text-white font-semibold">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-center text-gray-600 dark:text-gray-300 font-semibold">{potreba.brojPotreba}</DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">{potreba.brojKlijenata}</DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">{potreba.ukupnoRadnika}</DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-right text-brand-navy dark:text-white font-semibold">
                       {formatirajEure(potreba.prosjecnaCijena)}
-                    </td>
-                    <td className="py-4 px-6 text-right">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-right">
                       <Link
                         href={`/potrebe/${encodeURIComponent(potreba.kljuc)}?status=zatvoreno`}
                         className="inline-flex items-center gap-1 text-brand-yellow hover:text-brand-orange font-medium text-sm transition-colors"
                       >
                         Detalji <ArrowRight size={14} />
                       </Link>
-                    </td>
-                  </tr>
+                    </DataTableCell>
+                  </DataTableRow>
                 ))}
-              </tbody>
-            </table>
+              </DataTableBody>
+            </DataTable>
           </div>
         </div>
       )}

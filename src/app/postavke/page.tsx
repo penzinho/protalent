@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2, Save } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 const KORISNIK_POSTAVKE_STORAGE_KEY = 'hr-korisnik-postavke';
 
@@ -247,7 +250,7 @@ export default function PostavkePage() {
           <label htmlFor="imePrezime" className="text-sm font-semibold text-brand-navy dark:text-gray-300 block">
             Ime i prezime
           </label>
-          <input
+          <Input
             id="imePrezime"
             type="text"
             value={postavke.imePrezime}
@@ -262,7 +265,7 @@ export default function PostavkePage() {
           <label htmlFor="email" className="text-sm font-semibold text-brand-navy dark:text-gray-300 block">
             Email adresa
           </label>
-          <input
+          <Input
             id="email"
             type="email"
             value={postavke.email}
@@ -317,7 +320,7 @@ export default function PostavkePage() {
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input
+            <Input
               type="text"
               placeholder="Host (npr. smtp.gmail.com)"
               value={integracije.smtp.host}
@@ -326,7 +329,7 @@ export default function PostavkePage() {
               }
               className="px-4 py-3 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
             />
-            <input
+            <Input
               type="number"
               placeholder="Port"
               value={integracije.smtp.port}
@@ -338,7 +341,7 @@ export default function PostavkePage() {
               }
               className="px-4 py-3 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
             />
-            <input
+            <Input
               type="text"
               placeholder="Username"
               value={integracije.smtp.username}
@@ -347,7 +350,7 @@ export default function PostavkePage() {
               }
               className="px-4 py-3 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
             />
-            <input
+            <Input
               type="password"
               placeholder={
                 integracije.smtp.passwordConfigured ? 'Lozinka je spremljena (upiši novu za promjenu)' : 'Lozinka'
@@ -358,7 +361,7 @@ export default function PostavkePage() {
               }
               className="px-4 py-3 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
             />
-            <input
+            <Input
               type="text"
               placeholder="From name"
               value={integracije.smtp.fromName}
@@ -367,7 +370,7 @@ export default function PostavkePage() {
               }
               className="px-4 py-3 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
             />
-            <input
+            <Input
               type="email"
               placeholder="From email"
               value={integracije.smtp.fromEmail}
@@ -378,13 +381,12 @@ export default function PostavkePage() {
             />
           </div>
           <label className="inline-flex items-center gap-2 text-sm text-brand-navy dark:text-gray-300">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={integracije.smtp.secure}
-              onChange={(e) =>
-                setIntegracije((prev) => ({ ...prev, smtp: { ...prev.smtp, secure: e.target.checked } }))
+              onCheckedChange={(checked) =>
+                setIntegracije((prev) => ({ ...prev, smtp: { ...prev.smtp, secure: checked === true } }))
               }
-              className="rounded border-gray-300 text-brand-navy focus:ring-brand-navy"
+              className="border-gray-300 data-[state=checked]:bg-brand-navy data-[state=checked]:border-brand-navy"
             />
             Koristi TLS/SSL (secure)
           </label>
@@ -392,7 +394,7 @@ export default function PostavkePage() {
 
         <section className="space-y-3">
           <h3 className="text-lg font-semibold text-brand-navy dark:text-white">Template maila</h3>
-          <input
+          <Input
             type="text"
             placeholder="Subject template"
             value={integracije.mailTemplate.subjectTemplate}
@@ -404,7 +406,7 @@ export default function PostavkePage() {
             }
             className="w-full px-4 py-3 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
           />
-          <textarea
+          <Textarea
             rows={8}
             value={integracije.mailTemplate.bodyTemplate}
             onChange={(e) =>

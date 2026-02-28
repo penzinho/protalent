@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Mail, Paperclip, X } from 'lucide-react';
 
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Textarea } from '@/components/ui/textarea';
 import type { UgovorDokument } from '@/lib/types/klijenti';
 
 interface Props {
@@ -31,7 +35,20 @@ const renderTemplate = (
   });
 };
 
-const danasnjiDatum = (): string => new Date().toLocaleDateString('hr-HR');
+const danasnjiDatumIso = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatirajDatumZaTemplate = (isoDate: string): string => {
+  if (!isoDate) return new Date().toLocaleDateString('hr-HR');
+  const date = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return new Date().toLocaleDateString('hr-HR');
+  return date.toLocaleDateString('hr-HR');
+};
 
 export default function PosaljiUgovorModal({
   otvoren,
@@ -50,6 +67,7 @@ export default function PosaljiUgovorModal({
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [trenutniUgovorId, setTrenutniUgovorId] = useState('');
+  const [datumUgovora, setDatumUgovora] = useState(danasnjiDatumIso());
   const [ucitavanjeTemplatea, setUcitavanjeTemplatea] = useState(false);
   const [slanje, setSlanje] = useState(false);
   const [greska, setGreska] = useState('');
@@ -64,6 +82,7 @@ export default function PosaljiUgovorModal({
     setGreska('');
     setTo(defaultTo || '');
     setTrenutniUgovorId(odabraniUgovorId || ugovori[0]?.id || '');
+    setDatumUgovora(danasnjiDatumIso());
   }, [otvoren, defaultTo, odabraniUgovorId, ugovori]);
 
   useEffect(() => {
@@ -95,12 +114,12 @@ export default function PosaljiUgovorModal({
     if (!otvoren || !odabraniUgovor) return;
     const context = {
       klijent_naziv: klijentNaziv,
-      datum: danasnjiDatum(),
+      datum: formatirajDatumZaTemplate(datumUgovora),
       naziv_ugovora: odabraniUgovor.naziv_datoteke,
     };
     setSubject(renderTemplate(subjectTemplate, context));
     setBody(renderTemplate(bodyTemplate, context));
-  }, [otvoren, odabraniUgovor, subjectTemplate, bodyTemplate, klijentNaziv]);
+  }, [otvoren, odabraniUgovor, subjectTemplate, bodyTemplate, klijentNaziv, datumUgovora]);
 
   if (!otvoren) return null;
 
@@ -161,17 +180,19 @@ export default function PosaljiUgovorModal({
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">
               Ugovor (attachment)
             </label>
-            <select
+            <SearchableSelect
               value={trenutniUgovorId}
-              onChange={(e) => setTrenutniUgovorId(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
-            >
-              {ugovori.map((ugovor) => (
-                <option key={ugovor.id} value={ugovor.id}>
-                  {ugovor.naziv_datoteke}
-                </option>
-              ))}
-            </select>
+              onChange={setTrenutniUgovorId}
+              options={ugovori.map((ugovor) => ({
+                value: ugovor.id,
+                label: ugovor.naziv_datoteke,
+                keywords: ugovor.naziv_datoteke,
+              }))}
+              placeholder="Odaberi ugovor"
+              searchPlaceholder="Pretraži ugovore..."
+              emptyText="Nema ugovora."
+              disabled={ugovori.length === 0}
+            />
             {odabraniUgovor && (
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                 <Paperclip size={12} />
@@ -181,8 +202,13 @@ export default function PosaljiUgovorModal({
           </div>
 
           <div>
+            <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Datum ugovora</label>
+            <DatePicker value={datumUgovora} onChange={setDatumUgovora} />
+          </div>
+
+          <div>
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">To</label>
-            <input
+            <Input
               type="email"
               value={to}
               onChange={(e) => setTo(e.target.value)}
@@ -193,7 +219,7 @@ export default function PosaljiUgovorModal({
 
           <div>
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Subject</label>
-            <input
+            <Input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
@@ -203,7 +229,7 @@ export default function PosaljiUgovorModal({
 
           <div>
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Sadržaj</label>
-            <textarea
+            <Textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={8}

@@ -10,6 +10,17 @@ import { generirajUgovorPdfDatoteka } from '@/lib/pdf/generirajUgovorPdf';
 import type { KlijentAktivnost, KlijentDetalji, PozicijaDetalji, UgovorDokument } from '@/lib/types/klijenti';
 import { revalidateCachePaths } from '@/lib/client/revalidateCache';
 import PosaljiUgovorModal from '@/components/klijenti/PosaljiUgovorModal';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTableRow,
+} from '@/components/ui/data-table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 // Pomoćna funkcija za striktni HR format datuma
 const formatirajDatum = (datumString: string) => {
@@ -42,6 +53,11 @@ const dobijBojuStatusaPotrebe = (status: string) => {
     ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/40'
     : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/40';
 };
+
+const statusPotrebeOpcije = [
+  { value: 'Otvoreno', label: 'Otvoreno' },
+  { value: 'Zatvoreno', label: 'Zatvoreno' },
+] as const;
 
 const formatirajTipRadnika = (tipRadnika?: string | null) => {
   switch (tipRadnika) {
@@ -345,24 +361,24 @@ export default function KlijentDetaljiClientView({
           <div key={pozicija.id} className={`bg-white dark:bg-[#0A2B50] rounded-2xl p-6 shadow-sm border ${jeOdabrana ? 'border-brand-navy dark:border-brand-yellow ring-1 ring-brand-navy dark:ring-brand-yellow' : 'border-gray-100 dark:border-gray-800 hover:border-brand-yellow/50 dark:hover:border-brand-yellow/50'} transition-all group relative overflow-hidden`}>
             
             <div className="absolute top-6 left-6 z-10">
-              <input 
-                type="checkbox" 
+              <Checkbox
                 checked={jeOdabrana}
-                onChange={() => togglePozicija(pozicija.id)}
-                className="w-5 h-5 rounded border-gray-300 text-brand-navy focus:ring-brand-navy cursor-pointer"
+                onCheckedChange={() => togglePozicija(pozicija.id)}
+                className="w-5 h-5 rounded border-gray-300 data-[state=checked]:bg-brand-navy data-[state=checked]:border-brand-navy cursor-pointer"
                 title="Odaberi za ugovor"
               />
             </div>
 
             <div className="absolute top-6 right-6">
-              <select
+              <SearchableSelect
                 value={statusPotrebe}
-                onChange={(e) => promijeniStatusPotrebe(pozicija.id, e.target.value as 'Otvoreno' | 'Zatvoreno')}
-                className={`appearance-none cursor-pointer outline-none font-bold text-xs uppercase tracking-wide rounded-full px-4 py-1.5 border transition-all ${dobijBojuStatusaPotrebe(statusPotrebe)}`}
-              >
-                <option value="Otvoreno">Otvoreno</option>
-                <option value="Zatvoreno">Zatvoreno</option>
-              </select>
+                onChange={(value) => promijeniStatusPotrebe(pozicija.id, value as 'Otvoreno' | 'Zatvoreno')}
+                options={[...statusPotrebeOpcije]}
+                placeholder="Status"
+                searchPlaceholder="Pretraži status..."
+                emptyText="Nema statusa."
+                triggerClassName={`h-8 px-4 py-1.5 text-xs uppercase tracking-wide rounded-full border font-bold ${dobijBojuStatusaPotrebe(statusPotrebe)}`}
+              />
             </div>
             
             <h3 className="text-xl font-bold mb-5 pl-8 pr-36">
@@ -416,73 +432,73 @@ export default function KlijentDetaljiClientView({
   const renderPotrebeTablica = (listaPotreba: PozicijaDetalji[]) => (
     <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-              <th className="py-4 px-6 w-10"></th>
-              <th className="py-4 px-6">Radno mjesto</th>
-              <th className="py-4 px-6">Status</th>
-              <th className="py-4 px-6">Tip radnika</th>
-              <th className="py-4 px-6">Nacionalnosti</th>
-              <th className="py-4 px-6 text-center">Broj radnika</th>
-              <th className="py-4 px-6">Cijena</th>
-              <th className="py-4 px-6">Avans</th>
-              <th className="py-4 px-6">Datum upisa</th>
-              <th className="py-4 px-6 text-right">Akcije</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+        <DataTable className="w-full text-left border-collapse">
+          <DataTableHeader>
+            <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+              <DataTableHead className="py-4 px-6 w-10"></DataTableHead>
+              <DataTableHead className="py-4 px-6">Radno mjesto</DataTableHead>
+              <DataTableHead className="py-4 px-6">Status</DataTableHead>
+              <DataTableHead className="py-4 px-6">Tip radnika</DataTableHead>
+              <DataTableHead className="py-4 px-6">Nacionalnosti</DataTableHead>
+              <DataTableHead className="py-4 px-6 text-center">Broj radnika</DataTableHead>
+              <DataTableHead className="py-4 px-6">Cijena</DataTableHead>
+              <DataTableHead className="py-4 px-6">Avans</DataTableHead>
+              <DataTableHead className="py-4 px-6">Datum upisa</DataTableHead>
+              <DataTableHead className="py-4 px-6 text-right">Akcije</DataTableHead>
+            </DataTableRow>
+          </DataTableHeader>
+          <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
             {listaPotreba.map((pozicija) => {
               const statusPotrebe = normalizirajStatusPotrebe(pozicija.status);
               const avansPostotak = pozicija.avans_postotak ?? 0;
               const jeOdabrana = odabranePozicije.includes(pozicija.id);
 
               return (
-                <tr key={pozicija.id} className={`hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group ${jeOdabrana ? 'bg-blue-50/30 dark:bg-yellow-900/10' : ''}`}>
+                <DataTableRow key={pozicija.id} className={`hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group ${jeOdabrana ? 'bg-blue-50/30 dark:bg-yellow-900/10' : ''}`}>
                   
-                  <td className="py-4 px-6">
-                    <input 
-                      type="checkbox" 
+                  <DataTableCell className="py-4 px-6">
+                    <Checkbox
                       checked={jeOdabrana}
-                      onChange={() => togglePozicija(pozicija.id)}
-                      className="w-4 h-4 rounded border-gray-300 text-brand-navy focus:ring-brand-navy cursor-pointer"
+                      onCheckedChange={() => togglePozicija(pozicija.id)}
+                      className="w-4 h-4 rounded border-gray-300 data-[state=checked]:bg-brand-navy data-[state=checked]:border-brand-navy cursor-pointer"
                       title="Odaberi za ugovor"
                     />
-                  </td>
+                  </DataTableCell>
 
-                  <td className="py-4 px-6 font-semibold">
+                  <DataTableCell className="py-4 px-6 font-semibold">
                     <Link
                       href={`/pozicije/${pozicija.id}`}
                       className="text-brand-navy dark:text-white hover:text-brand-yellow transition-colors"
                     >
                       {pozicija.naziv_pozicije}
                     </Link>
-                  </td>
-                  <td className="py-4 px-6">
-                    <select
+                  </DataTableCell>
+                  <DataTableCell className="py-4 px-6">
+                    <SearchableSelect
                       value={statusPotrebe}
-                      onChange={(e) => promijeniStatusPotrebe(pozicija.id, e.target.value as 'Otvoreno' | 'Zatvoreno')}
-                      className={`appearance-none cursor-pointer outline-none font-bold text-xs uppercase tracking-wide rounded-full px-4 py-1.5 border transition-all ${dobijBojuStatusaPotrebe(statusPotrebe)}`}
-                    >
-                      <option value="Otvoreno">Otvoreno</option>
-                      <option value="Zatvoreno">Zatvoreno</option>
-                    </select>
-                  </td>
-                  <td className="py-4 px-6 text-gray-600 dark:text-gray-300 font-medium">
+                      onChange={(value) => promijeniStatusPotrebe(pozicija.id, value as 'Otvoreno' | 'Zatvoreno')}
+                      options={[...statusPotrebeOpcije]}
+                      placeholder="Status"
+                      searchPlaceholder="Pretraži status..."
+                      emptyText="Nema statusa."
+                      triggerClassName={`h-8 px-4 py-1.5 text-xs uppercase tracking-wide rounded-full border font-bold ${dobijBojuStatusaPotrebe(statusPotrebe)}`}
+                    />
+                  </DataTableCell>
+                  <DataTableCell className="py-4 px-6 text-gray-600 dark:text-gray-300 font-medium">
                     {formatirajTipRadnika(pozicija.tip_radnika)}
-                  </td>
-                  <td className="py-4 px-6 text-gray-600 dark:text-gray-300 text-sm">
+                  </DataTableCell>
+                  <DataTableCell className="py-4 px-6 text-gray-600 dark:text-gray-300 text-sm">
                     {formatirajNacionalnosti(pozicija.nacionalnosti)}
-                  </td>
-                  <td className="py-4 px-6 text-center">
+                  </DataTableCell>
+                  <DataTableCell className="py-4 px-6 text-center">
                     <span className="text-gray-600 dark:text-gray-300 font-semibold bg-gray-100 dark:bg-[#05182d] border border-transparent dark:border-gray-700 px-3 py-1 rounded-lg">
                       {pozicija.broj_izvrsitelja}
                     </span>
-                  </td>
-                  <td className="py-4 px-6 text-brand-navy dark:text-gray-200 font-medium">
+                  </DataTableCell>
+                  <DataTableCell className="py-4 px-6 text-brand-navy dark:text-gray-200 font-medium">
                     {pozicija.cijena_po_kandidatu} €
-                  </td>
-                  <td className="py-4 px-6">
+                  </DataTableCell>
+                  <DataTableCell className="py-4 px-6">
                     {pozicija.avans_dogovoren ? (
                       <span className="text-brand-orange font-medium">
                         {avansPostotak}% <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">({((pozicija.cijena_po_kandidatu * avansPostotak) / 100).toFixed(2)}€)</span>
@@ -490,23 +506,23 @@ export default function KlijentDetaljiClientView({
                     ) : (
                       <span className="text-gray-400 dark:text-gray-600">-</span>
                     )}
-                  </td>
-                  <td className="py-4 px-6 text-gray-600 dark:text-gray-400 text-sm">
+                  </DataTableCell>
+                  <DataTableCell className="py-4 px-6 text-gray-600 dark:text-gray-400 text-sm">
                     {formatirajDatum(pozicija.datum_upisa)}
-                  </td>
-                  <td className="py-4 px-6 text-right">
+                  </DataTableCell>
+                  <DataTableCell className="py-4 px-6 text-right">
                     <Link
                       href={`/pozicije/${pozicija.id}`}
                       className="text-brand-yellow hover:text-brand-orange font-medium text-sm transition-colors"
                     >
                       Upravljaj &rarr;
                     </Link>
-                  </td>
-                </tr>
+                  </DataTableCell>
+                </DataTableRow>
               );
             })}
-          </tbody>
-        </table>
+          </DataTableBody>
+        </DataTable>
       </div>
     </div>
   );
@@ -569,7 +585,7 @@ export default function KlijentDetaljiClientView({
             <div className="w-full">
               <p className="text-sm text-gray-400 dark:text-gray-500 font-semibold uppercase tracking-wider">Email za ugovore</p>
               <div className="mt-2 flex gap-2">
-                <input
+                <Input
                   type="email"
                   value={emailUgovori}
                   onChange={(e) => setEmailUgovori(e.target.value)}
@@ -727,16 +743,16 @@ export default function KlijentDetaljiClientView({
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                    <th className="py-4 px-6">Naziv</th>
-                    <th className="py-4 px-6">Povezane pozicije</th>
-                    <th className="py-4 px-6">Datum</th>
-                    <th className="py-4 px-6 text-right">Akcije</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              <DataTable className="w-full text-left border-collapse">
+                <DataTableHeader>
+                  <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                    <DataTableHead className="py-4 px-6">Naziv</DataTableHead>
+                    <DataTableHead className="py-4 px-6">Povezane pozicije</DataTableHead>
+                    <DataTableHead className="py-4 px-6">Datum</DataTableHead>
+                    <DataTableHead className="py-4 px-6 text-right">Akcije</DataTableHead>
+                  </DataTableRow>
+                </DataTableHeader>
+                <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {ugovori.map((ugovor) => {
                     const pregledLink =
                       ugovor.drive_web_view_link ||
@@ -745,17 +761,17 @@ export default function KlijentDetaljiClientView({
                       ugovor.drive_download_link ||
                       `https://drive.google.com/uc?export=download&id=${encodeURIComponent(ugovor.drive_file_id)}`;
                     return (
-                      <tr key={ugovor.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-6 font-semibold text-brand-navy dark:text-white">
+                      <DataTableRow key={ugovor.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors">
+                        <DataTableCell className="py-4 px-6 font-semibold text-brand-navy dark:text-white">
                           {ugovor.naziv_datoteke}
-                        </td>
-                        <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">
+                        </DataTableCell>
+                        <DataTableCell className="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">
                           {ugovor.pozicije_nazivi?.length ? ugovor.pozicije_nazivi.join(', ') : '-'}
-                        </td>
-                        <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">
+                        </DataTableCell>
+                        <DataTableCell className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">
                           {formatirajDatum(ugovor.created_at)}
-                        </td>
-                        <td className="py-4 px-6">
+                        </DataTableCell>
+                        <DataTableCell className="py-4 px-6">
                           <div className="flex justify-end gap-2 text-sm">
                             <a
                               href={pregledLink}
@@ -794,12 +810,12 @@ export default function KlijentDetaljiClientView({
                               {brisanjeUgovoraId === ugovor.id ? 'Brišem...' : 'Obriši'}
                             </button>
                           </div>
-                        </td>
-                      </tr>
+                        </DataTableCell>
+                      </DataTableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </DataTableBody>
+              </DataTable>
             </div>
           )}
         </div>
@@ -842,30 +858,30 @@ export default function KlijentDetaljiClientView({
               <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Još nema zabilježenih aktivnosti.</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                      <th className="py-3 px-6">Datum i vrijeme</th>
-                      <th className="py-3 px-6">User</th>
-                      <th className="py-3 px-6">Opis</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                <DataTable className="w-full text-left border-collapse">
+                  <DataTableHeader>
+                    <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                      <DataTableHead className="py-3 px-6">Datum i vrijeme</DataTableHead>
+                      <DataTableHead className="py-3 px-6">User</DataTableHead>
+                      <DataTableHead className="py-3 px-6">Opis</DataTableHead>
+                    </DataTableRow>
+                  </DataTableHeader>
+                  <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {aktivnosti.map((aktivnost) => (
-                      <tr key={aktivnost.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors">
-                        <td className="py-3 px-6 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                      <DataTableRow key={aktivnost.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors">
+                        <DataTableCell className="py-3 px-6 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
                           {formatirajDatumVrijeme(aktivnost.event_at)}
-                        </td>
-                        <td className="py-3 px-6">
+                        </DataTableCell>
+                        <DataTableCell className="py-3 px-6">
                           <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 dark:bg-[#05182d] text-xs text-gray-600 dark:text-gray-300">
                             {aktivnost.user_label || 'Sustav'}
                           </span>
-                        </td>
-                        <td className="py-3 px-6 text-sm text-brand-navy dark:text-white">{aktivnost.opis}</td>
-                      </tr>
+                        </DataTableCell>
+                        <DataTableCell className="py-3 px-6 text-sm text-brand-navy dark:text-white">{aktivnost.opis}</DataTableCell>
+                      </DataTableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </DataTableBody>
+                </DataTable>
               </div>
             )}
           </div>

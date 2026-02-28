@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Loader2, Calculator } from 'lucide-react';
 import { revalidateCachePaths } from '@/lib/client/revalidateCache';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 interface Props {
   klijentId: string;
@@ -24,6 +29,11 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
   const [odabraneNacionalnosti, setOdabraneNacionalnosti] = useState<string[]>([]);
   const [novaNacionalnost, setNovaNacionalnost] = useState('');
   const [dodavanjeNacionalnosti, setDodavanjeNacionalnosti] = useState(false);
+  const tipoviRadnikaOpcije = [
+    { value: 'domaci', label: 'Domaći', keywords: 'domaci hrvatski' },
+    { value: 'strani', label: 'Strani', keywords: 'strani foreign' },
+    { value: 'strani_u_rh', label: 'Strani radnici u RH', keywords: 'strani u rh' },
+  ] as const;
   
   const [formData, setFormData] = useState({
     naziv_pozicije: '',
@@ -64,14 +74,6 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
       return ((cijena * postotak) / 100).toFixed(2);
     }
     return '0.00';
-  };
-
-  const toggleNacionalnost = (nacionalnostId: string) => {
-    setOdabraneNacionalnosti((trenutne) =>
-      trenutne.includes(nacionalnostId)
-        ? trenutne.filter((id) => id !== nacionalnostId)
-        : [...trenutne, nacionalnostId]
-    );
   };
 
   const dodajNovuNacionalnost = async () => {
@@ -194,7 +196,7 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
 
           <div>
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Ime radnog mjesta</label>
-            <input 
+            <Input
               type="text" 
               placeholder="Npr. Građevinski radnik"
               value={formData.naziv_pozicije} 
@@ -206,7 +208,7 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Broj kandidata</label>
-              <input 
+              <Input
                 type="number" 
                 min="1"
                 value={formData.broj_izvrsitelja} 
@@ -216,18 +218,16 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
             </div>
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Datum upisa</label>
-              <input 
-                type="date" 
+              <DatePicker
                 value={formData.datum_upisa} 
-                onChange={(e) => setFormData({...formData, datum_upisa: e.target.value})}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
+                onChange={(value) => setFormData({ ...formData, datum_upisa: value })}
               />
             </div>
           </div>
 
           <div>
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Ugovorena cijena po kandidatu (€)</label>
-            <input 
+            <Input
               type="number" 
               placeholder="Npr. 500"
               value={formData.cijena_po_kandidatu} 
@@ -238,10 +238,10 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
 
           <div>
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Tip radnika</label>
-            <select
+            <SearchableSelect
               value={formData.tip_radnika}
-              onChange={(e) => {
-                const noviTip = e.target.value as (typeof TIPOVI_RADNIKA)[number];
+              onChange={(value) => {
+                const noviTip = value as (typeof TIPOVI_RADNIKA)[number];
                 setFormData({
                   ...formData,
                   tip_radnika: noviTip,
@@ -250,13 +250,11 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
                   setOdabraneNacionalnosti([]);
                 }
               }}
-              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
-              required
-            >
-              <option value="domaci">Domaći</option>
-              <option value="strani">Strani</option>
-              <option value="strani_u_rh">Strani radnici u RH</option>
-            </select>
+              options={[...tipoviRadnikaOpcije]}
+              placeholder="Odaberi tip radnika"
+              searchPlaceholder="Pretraži tip radnika..."
+              emptyText="Nema tipova radnika."
+            />
           </div>
 
           {trebaNacionalnosti && (
@@ -270,28 +268,27 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
                 </p>
               </div>
 
-              <div className="max-h-44 overflow-y-auto space-y-2 pr-1">
-                {nacionalnostiOpcije.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Trenutno nema nacionalnosti u bazi.
-                  </p>
-                ) : (
-                  nacionalnostiOpcije.map((nacionalnost) => (
-                    <label key={nacionalnost.id} className="flex items-center gap-2 text-sm text-brand-navy dark:text-gray-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={odabraneNacionalnosti.includes(nacionalnost.id)}
-                        onChange={() => toggleNacionalnost(nacionalnost.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-brand-orange focus:ring-brand-orange accent-brand-orange"
-                      />
-                      {nacionalnost.naziv}
-                    </label>
-                  ))
-                )}
-              </div>
+              {nacionalnostiOpcije.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Trenutno nema nacionalnosti u bazi.
+                </p>
+              ) : (
+                <SearchableMultiSelect
+                  values={odabraneNacionalnosti}
+                  onChange={setOdabraneNacionalnosti}
+                  options={nacionalnostiOpcije.map((nacionalnost) => ({
+                    value: nacionalnost.id,
+                    label: nacionalnost.naziv,
+                    keywords: nacionalnost.naziv,
+                  }))}
+                  placeholder="Odaberite nacionalnosti..."
+                  searchPlaceholder="Pretraži nacionalnosti..."
+                  emptyText="Nema pronađenih nacionalnosti."
+                />
+              )}
 
               <div className="flex flex-col sm:flex-row gap-2">
-                <input
+                <Input
                   type="text"
                   placeholder="Dodaj novu nacionalnost"
                   value={novaNacionalnost}
@@ -312,11 +309,10 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
 
           <div className="p-4 bg-gray-50 dark:bg-[#05182d] rounded-xl border border-gray-200 dark:border-gray-700">
             <label className="flex items-center gap-3 cursor-pointer">
-              <input 
-                type="checkbox" 
+              <Checkbox
                 checked={formData.avans_dogovoren}
-                onChange={(e) => setFormData({...formData, avans_dogovoren: e.target.checked})}
-                className="w-5 h-5 rounded border-gray-300 text-brand-orange focus:ring-brand-orange accent-brand-orange"
+                onCheckedChange={(checked) => setFormData({ ...formData, avans_dogovoren: checked === true })}
+                className="w-5 h-5 rounded border-gray-300 text-brand-orange focus:ring-brand-orange data-[state=checked]:bg-brand-orange data-[state=checked]:border-brand-orange"
               />
               <span className="font-semibold text-brand-navy dark:text-gray-300">Dogovoren je avans</span>
             </label>
@@ -326,7 +322,7 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
                     <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Postotak avansa (%)</label>
-                    <input 
+                    <Input
                       type="number" 
                       placeholder="Npr. 30"
                       min="1" max="100"

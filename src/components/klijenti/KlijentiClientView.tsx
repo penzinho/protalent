@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Building2, Plus, Search } from 'lucide-react';
 import DodajKlijentaModal from '@/components/DodajKlijentaModal';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTableRow,
+} from '@/components/ui/data-table';
+import { Input } from '@/components/ui/input';
 import type { KlijentOverview } from '@/lib/types/klijenti';
 
 interface Props {
@@ -59,7 +68,7 @@ export default function KlijentiClientView({ initialKlijenti, greska = null }: P
       <div className="bg-white dark:bg-[#0A2B50] p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8 transition-colors">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
-          <input
+          <Input
             type="text"
             placeholder="Pretrazi po nazivu tvrtke ili OIB-u..."
             value={pretrazivanje}
@@ -78,21 +87,21 @@ export default function KlijentiClientView({ initialKlijenti, greska = null }: P
       ) : (
         <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                  <th className="py-4 px-6">Klijent</th>
-                  <th className="py-4 px-6">Industrija</th>
-                  <th className="py-4 px-6">Grad</th>
-                  <th className="py-4 px-6 text-center">Pozicije</th>
-                  <th className="py-4 px-6 text-center">Kandidati</th>
-                  <th className="py-4 px-6 text-right">Akcije</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <DataTable className="w-full text-left border-collapse">
+              <DataTableHeader>
+                <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                  <DataTableHead className="py-4 px-6">Klijent</DataTableHead>
+                  <DataTableHead className="py-4 px-6">Industrija</DataTableHead>
+                  <DataTableHead className="py-4 px-6">Grad</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-center">Pozicije</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-center">Kandidati</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-right">Akcije</DataTableHead>
+                </DataTableRow>
+              </DataTableHeader>
+              <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filtriraniKlijenti.map((klijent) => (
-                  <tr key={klijent.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
-                    <td className="py-4 px-6">
+                  <DataTableRow key={klijent.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
+                    <DataTableCell className="py-4 px-6">
                       <Link
                         href={`/klijenti/${klijent.id}`}
                         className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/50"
@@ -102,37 +111,37 @@ export default function KlijentiClientView({ initialKlijenti, greska = null }: P
                         </p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">OIB: {klijent.oib}</p>
                       </Link>
-                    </td>
-                    <td className="py-4 px-6">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-navy/5 dark:bg-brand-yellow/10 text-brand-navy dark:text-brand-yellow border border-brand-navy/10 dark:border-brand-yellow/20">
                         {klijent.industrija || 'Nije odabrano'}
                       </span>
-                    </td>
-                    <td className="py-4 px-6">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6">
                       <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">{klijent.grad || '-'}</span>
-                    </td>
-                    <td className="py-4 px-6 text-center">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-center">
                       <span className="text-gray-600 dark:text-gray-300 font-semibold bg-gray-100 dark:bg-[#05182d] border border-transparent dark:border-gray-700 px-3 py-1 rounded-lg">
                         {klijent.brojPozicija}
                       </span>
-                    </td>
-                    <td className="py-4 px-6 text-center">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-center">
                       <span className="text-gray-600 dark:text-gray-300 font-semibold bg-gray-100 dark:bg-[#05182d] border border-transparent dark:border-gray-700 px-3 py-1 rounded-lg">
                         {klijent.brojKandidata}
                       </span>
-                    </td>
-                    <td className="py-4 px-6 text-right">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-right">
                       <Link
                         href={`/klijenti/${klijent.id}`}
                         className="text-brand-yellow hover:text-brand-orange font-medium text-sm transition-colors"
                       >
                         Detalji &rarr;
                       </Link>
-                    </td>
-                  </tr>
+                    </DataTableCell>
+                  </DataTableRow>
                 ))}
-              </tbody>
-            </table>
+              </DataTableBody>
+            </DataTable>
           </div>
         </div>
       )}

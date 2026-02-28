@@ -5,6 +5,14 @@ import { supabase } from '@/lib/supabase';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Building2, LayoutGrid, List, Users, Euro } from 'lucide-react';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTableRow,
+} from '@/components/ui/data-table';
 
 interface KlijentRef {
   id: string;
@@ -337,34 +345,34 @@ export default function PotrebaDetaljiPage() {
       ) : (
         <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                  <th className="py-4 px-6">Klijent</th>
-                  <th className="py-4 px-6 text-center">Potrebe</th>
-                  <th className="py-4 px-6 text-center">Radnici</th>
-                  <th className="py-4 px-6 text-center">O/Z</th>
-                  <th className="py-4 px-6 text-right">Prosj. cijena</th>
-                  <th className="py-4 px-6 text-right">Ukupna vrijednost</th>
-                  <th className="py-4 px-6 text-right">Akcije</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <DataTable className="w-full text-left border-collapse">
+              <DataTableHeader>
+                <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                  <DataTableHead className="py-4 px-6">Klijent</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-center">Potrebe</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-center">Radnici</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-center">O/Z</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-right">Prosj. cijena</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-right">Ukupna vrijednost</DataTableHead>
+                  <DataTableHead className="py-4 px-6 text-right">Akcije</DataTableHead>
+                </DataTableRow>
+              </DataTableHeader>
+              <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {grupiranoPoKlijentu.map((stavka) => (
-                  <tr key={stavka.klijentId} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors">
-                    <td className="py-4 px-6 font-semibold text-brand-navy dark:text-white">{stavka.klijentNaziv}</td>
-                    <td className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">{stavka.brojPotreba}</td>
-                    <td className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">{stavka.ukupnoRadnika}</td>
-                    <td className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">
+                  <DataTableRow key={stavka.klijentId} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors">
+                    <DataTableCell className="py-4 px-6 font-semibold text-brand-navy dark:text-white">{stavka.klijentNaziv}</DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">{stavka.brojPotreba}</DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">{stavka.ukupnoRadnika}</DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-center text-gray-600 dark:text-gray-300">
                       {stavka.otvorene}/{stavka.zatvorene}
-                    </td>
-                    <td className="py-4 px-6 text-right font-semibold text-brand-navy dark:text-white">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-right font-semibold text-brand-navy dark:text-white">
                       {formatirajEure(stavka.prosjecnaCijena)}
-                    </td>
-                    <td className="py-4 px-6 text-right font-semibold text-brand-navy dark:text-white">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-right font-semibold text-brand-navy dark:text-white">
                       {formatirajEure(stavka.ukupnaVrijednost)}
-                    </td>
-                    <td className="py-4 px-6 text-right">
+                    </DataTableCell>
+                    <DataTableCell className="py-4 px-6 text-right">
                       {stavka.klijentId !== 'nepoznat' ? (
                         <Link
                           href={`/klijenti/${stavka.klijentId}`}
@@ -375,11 +383,11 @@ export default function PotrebaDetaljiPage() {
                       ) : (
                         <span className="text-gray-400 text-sm">-</span>
                       )}
-                    </td>
-                  </tr>
+                    </DataTableCell>
+                  </DataTableRow>
                 ))}
-              </tbody>
-            </table>
+              </DataTableBody>
+            </DataTable>
           </div>
         </div>
       )}

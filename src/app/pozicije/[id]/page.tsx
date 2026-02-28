@@ -15,7 +15,6 @@ import {
   Globe,
   Phone,
   Mail,
-  ChevronDown,
   Pencil,
   Upload,
   Download,
@@ -25,6 +24,17 @@ import DodajKandidataModal from '@/components/DodajKandidataModal';
 import UrediPozicijuModal from '@/components/UrediPozicijuModal';
 import PosaljiUgovorModal from '@/components/klijenti/PosaljiUgovorModal';
 import { generirajUgovorPdfDatoteka } from '@/lib/pdf/generirajUgovorPdf';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTableRow,
+} from '@/components/ui/data-table';
+import { Input } from '@/components/ui/input';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Textarea } from '@/components/ui/textarea';
 import type { UgovorDokument } from '@/lib/types/klijenti';
 import type { KandidatCvSummary, PotrebaDokument, PotrebaDokumentTip } from '@/lib/types/dokumenti';
 
@@ -562,12 +572,12 @@ export default function PozicijaDetaljiPage() {
               <Save size={16} /> {spremanjeUvjeta ? 'Spremanje...' : 'Spremi'}
             </button>
           </div>
-          <textarea
+          <Textarea
             value={uvjeti}
             onChange={(e) => setUvjeti(e.target.value)}
             placeholder="Ovdje upišite uvjete (npr. plaća 1200€ neto, osiguran smještaj, plaćen topli obrok, rad u smjenama...)"
             className="w-full flex-1 min-h-[150px] p-4 bg-gray-50 dark:bg-[#05182d] border border-gray-100 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white resize-none text-sm leading-relaxed"
-          ></textarea>
+          />
         </div>
       </div>
 
@@ -598,32 +608,32 @@ export default function PozicijaDetaljiPage() {
         ) : (
           <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
             <div className="overflow-x-auto overflow-y-visible">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                    <th className="py-4 px-6">Ime i prezime</th>
-                    <th className="py-4 px-6">Nacionalnost</th>
-                    <th className="py-4 px-6">Kontakt</th>
-                    <th className="py-4 px-6">Životopis</th>
-                    <th className="py-4 px-6 text-center">Status</th>
-                    <th className="py-4 px-6 text-right">Datum slanja</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              <DataTable className="w-full text-left border-collapse">
+                <DataTableHeader>
+                  <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                    <DataTableHead className="py-4 px-6">Ime i prezime</DataTableHead>
+                    <DataTableHead className="py-4 px-6">Nacionalnost</DataTableHead>
+                    <DataTableHead className="py-4 px-6">Kontakt</DataTableHead>
+                    <DataTableHead className="py-4 px-6">Životopis</DataTableHead>
+                    <DataTableHead className="py-4 px-6 text-center">Status</DataTableHead>
+                    <DataTableHead className="py-4 px-6 text-right">Datum slanja</DataTableHead>
+                  </DataTableRow>
+                </DataTableHeader>
+                <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {kandidati.map((kandidat) => {
                     const cvSummary = kandidatiCvSummaryById.get(kandidat.id);
                     const primaryCv = cvSummary?.primaryCv || null;
 
                     return (
-                      <tr key={kandidat.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
-                        <td className="py-4 px-6 font-bold text-brand-navy dark:text-white">{kandidat.ime_prezime}</td>
-                        <td className="py-4 px-6 text-gray-600 dark:text-gray-300">
+                      <DataTableRow key={kandidat.id} className="hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group">
+                        <DataTableCell className="py-4 px-6 font-bold text-brand-navy dark:text-white">{kandidat.ime_prezime}</DataTableCell>
+                        <DataTableCell className="py-4 px-6 text-gray-600 dark:text-gray-300">
                           <div className="flex items-center gap-2">
                             <Globe size={14} className="text-brand-yellow" />
                             {kandidat.nacionalnost || '-'}
                           </div>
-                        </td>
-                        <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        </DataTableCell>
+                        <DataTableCell className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 space-y-1">
                           {kandidat.email && (
                             <div className="flex items-center gap-2">
                               <Mail size={12} /> {kandidat.email}
@@ -635,8 +645,8 @@ export default function PozicijaDetaljiPage() {
                             </div>
                           )}
                           {!kandidat.email && !kandidat.telefon && '-'}
-                        </td>
-                        <td className="py-4 px-6 text-sm">
+                        </DataTableCell>
+                        <DataTableCell className="py-4 px-6 text-sm">
                           <div className="space-y-1">
                             {primaryCv ? (
                               <div className="flex flex-wrap items-center gap-3">
@@ -664,7 +674,7 @@ export default function PozicijaDetaljiPage() {
                             <label className="inline-flex items-center gap-1 text-xs text-brand-yellow hover:text-brand-orange cursor-pointer transition-colors">
                               <Upload size={12} />
                               {uploadingCvKandidatId === kandidat.id ? 'Upload...' : 'Upload nova verzija'}
-                              <input
+                              <Input
                                 type="file"
                                 className="hidden"
                                 onChange={(event) => {
@@ -675,30 +685,31 @@ export default function PozicijaDetaljiPage() {
                               />
                             </label>
                           </div>
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          <div className="relative inline-block">
-                            <select
-                              value={kandidat.status}
-                              onChange={(e) => promijeniStatusKandidata(kandidat.id, e.target.value)}
-                              className={`appearance-none cursor-pointer outline-none font-bold text-xs uppercase tracking-wide rounded-full px-4 py-1.5 border transition-all ${dobijBojuStatusa(kandidat.status)} pr-8`}
-                            >
-                              <option value="Poslano klijentu">Poslan klijentu</option>
-                              <option value="Dogovoren razgovor">Dogovoren razgovor</option>
-                              <option value="Zaposlen">Zaposlen</option>
-                              <option value="Odbijen">Odbijen</option>
-                            </select>
-                            <ChevronDown size={14} className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none opacity-50" />
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-right text-gray-600 dark:text-gray-400 text-sm font-medium">
+                        </DataTableCell>
+                        <DataTableCell className="py-4 px-6 text-center">
+                          <SearchableSelect
+                            value={kandidat.status}
+                            onChange={(value) => promijeniStatusKandidata(kandidat.id, value)}
+                            options={[
+                              { value: 'Poslano klijentu', label: 'Poslan klijentu' },
+                              { value: 'Dogovoren razgovor', label: 'Dogovoren razgovor' },
+                              { value: 'Zaposlen', label: 'Zaposlen' },
+                              { value: 'Odbijen', label: 'Odbijen' },
+                            ]}
+                            placeholder="Status"
+                            searchPlaceholder="Pretraži status..."
+                            emptyText="Nema statusa."
+                            triggerClassName={`h-8 px-4 py-1.5 text-xs uppercase tracking-wide rounded-full border font-bold ${dobijBojuStatusa(kandidat.status)}`}
+                          />
+                        </DataTableCell>
+                        <DataTableCell className="py-4 px-6 text-right text-gray-600 dark:text-gray-400 text-sm font-medium">
                           {formatirajDatum(kandidat.datum_slanja)}
-                        </td>
-                      </tr>
+                        </DataTableCell>
+                      </DataTableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </DataTableBody>
+              </DataTable>
             </div>
           </div>
         )}
@@ -774,24 +785,24 @@ export default function PozicijaDetaljiPage() {
                     <div className="text-sm text-gray-500 dark:text-gray-400">Nema ugovora za ovu potrebu.</div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                            <th className="py-4 px-4">Naziv</th>
-                            <th className="py-4 px-4">Datum</th>
-                            <th className="py-4 px-4 text-right">Akcije</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      <DataTable className="w-full text-left border-collapse">
+                        <DataTableHeader>
+                          <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                            <DataTableHead className="py-4 px-4">Naziv</DataTableHead>
+                            <DataTableHead className="py-4 px-4">Datum</DataTableHead>
+                            <DataTableHead className="py-4 px-4 text-right">Akcije</DataTableHead>
+                          </DataTableRow>
+                        </DataTableHeader>
+                        <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                           {ugovoriPotrebe.map((ugovor) => (
-                            <tr key={ugovor.id}>
-                              <td className="py-3 px-4 font-medium text-brand-navy dark:text-white">
+                            <DataTableRow key={ugovor.id}>
+                              <DataTableCell className="py-3 px-4 font-medium text-brand-navy dark:text-white">
                                 {ugovor.naziv_datoteke}
-                              </td>
-                              <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                              </DataTableCell>
+                              <DataTableCell className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                                 {formatirajDatum(ugovor.created_at)}
-                              </td>
-                              <td className="py-3 px-4">
+                              </DataTableCell>
+                              <DataTableCell className="py-3 px-4">
                                 <div className="flex justify-end gap-2 text-sm">
                                   <a
                                     href={pregledLinkZaDatoteku(ugovor)}
@@ -820,11 +831,11 @@ export default function PozicijaDetaljiPage() {
                                     Pošalji ugovor
                                   </button>
                                 </div>
-                              </td>
-                            </tr>
+                              </DataTableCell>
+                            </DataTableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </DataTableBody>
+                      </DataTable>
                     </div>
                   )}
                 </div>
@@ -834,19 +845,23 @@ export default function PozicijaDetaljiPage() {
                 <div className="space-y-5">
                   <div className="bg-gray-50 dark:bg-[#05182d] border border-gray-100 dark:border-gray-700 rounded-2xl p-4 sm:p-5">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                      <select
+                      <SearchableSelect
                         value={odabraniKandidatZaCv}
-                        onChange={(e) => setOdabraniKandidatZaCv(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white dark:bg-[#0A2B50] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all text-sm dark:text-white"
-                      >
-                        <option value="">Odaberi kandidata</option>
-                        {kandidati.map((kandidat) => (
-                          <option key={kandidat.id} value={kandidat.id}>
-                            {kandidat.ime_prezime}
-                          </option>
-                        ))}
-                      </select>
-                      <input
+                        onChange={setOdabraniKandidatZaCv}
+                        options={[
+                          { value: '', label: 'Odaberi kandidata' },
+                          ...kandidati.map((kandidat) => ({
+                            value: kandidat.id,
+                            label: kandidat.ime_prezime,
+                            keywords: `${kandidat.ime_prezime} ${kandidat.email || ''} ${kandidat.telefon || ''}`,
+                          })),
+                        ]}
+                        placeholder="Odaberi kandidata"
+                        searchPlaceholder="Pretraži kandidata..."
+                        emptyText="Nema kandidata."
+                        triggerClassName="w-full px-4 py-2.5 bg-white dark:bg-[#0A2B50] border border-gray-200 dark:border-gray-700 rounded-xl text-sm dark:text-white"
+                      />
+                      <Input
                         type="file"
                         onChange={(event) => setOdabraniCvFile(event.target.files?.[0] || null)}
                         className="w-full px-3 py-2.5 bg-white dark:bg-[#0A2B50] border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-600 dark:text-gray-300"
@@ -867,33 +882,33 @@ export default function PozicijaDetaljiPage() {
                     <div className="text-sm text-gray-500 dark:text-gray-400">Nema životopisa za ovu potrebu.</div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                            <th className="py-4 px-4">Kandidat</th>
-                            <th className="py-4 px-4">Naziv</th>
-                            <th className="py-4 px-4">Verzija</th>
-                            <th className="py-4 px-4">Datum</th>
-                            <th className="py-4 px-4 text-right">Akcije</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      <DataTable className="w-full text-left border-collapse">
+                        <DataTableHeader>
+                          <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                            <DataTableHead className="py-4 px-4">Kandidat</DataTableHead>
+                            <DataTableHead className="py-4 px-4">Naziv</DataTableHead>
+                            <DataTableHead className="py-4 px-4">Verzija</DataTableHead>
+                            <DataTableHead className="py-4 px-4">Datum</DataTableHead>
+                            <DataTableHead className="py-4 px-4 text-right">Akcije</DataTableHead>
+                          </DataTableRow>
+                        </DataTableHeader>
+                        <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                           {zivotopisi.map((doc) => (
-                            <tr key={doc.id}>
-                              <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                            <DataTableRow key={doc.id}>
+                              <DataTableCell className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
                                 {doc.kandidat_ime_prezime || '-'}
-                              </td>
-                              <td className="py-3 px-4 font-medium text-brand-navy dark:text-white">
+                              </DataTableCell>
+                              <DataTableCell className="py-3 px-4 font-medium text-brand-navy dark:text-white">
                                 {doc.naziv_datoteke}
-                              </td>
-                              <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                              </DataTableCell>
+                              <DataTableCell className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                                 v{doc.version}
                                 {doc.is_primary ? ' (glavni)' : ''}
-                              </td>
-                              <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                              </DataTableCell>
+                              <DataTableCell className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                                 {formatirajDatum(doc.created_at)}
-                              </td>
-                              <td className="py-3 px-4">
+                              </DataTableCell>
+                              <DataTableCell className="py-3 px-4">
                                 <div className="flex justify-end gap-2 text-sm">
                                   <a
                                     href={pregledLinkZaDatoteku(doc)}
@@ -913,11 +928,11 @@ export default function PozicijaDetaljiPage() {
                                     Preuzmi
                                   </a>
                                 </div>
-                              </td>
-                            </tr>
+                              </DataTableCell>
+                            </DataTableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </DataTableBody>
+                      </DataTable>
                     </div>
                   )}
                 </div>
@@ -927,7 +942,7 @@ export default function PozicijaDetaljiPage() {
                 <div className="space-y-5">
                   <div className="bg-gray-50 dark:bg-[#05182d] border border-gray-100 dark:border-gray-700 rounded-2xl p-4 sm:p-5">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                      <input
+                      <Input
                         type="file"
                         onChange={(event) => setOdabraniOstaloFile(event.target.files?.[0] || null)}
                         className="w-full px-3 py-2.5 bg-white dark:bg-[#0A2B50] border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-600 dark:text-gray-300"
@@ -948,22 +963,22 @@ export default function PozicijaDetaljiPage() {
                     <div className="text-sm text-gray-500 dark:text-gray-400">Nema ostalih datoteka za ovu potrebu.</div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                            <th className="py-4 px-4">Naziv</th>
-                            <th className="py-4 px-4">Datum</th>
-                            <th className="py-4 px-4 text-right">Akcije</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      <DataTable className="w-full text-left border-collapse">
+                        <DataTableHeader>
+                          <DataTableRow className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
+                            <DataTableHead className="py-4 px-4">Naziv</DataTableHead>
+                            <DataTableHead className="py-4 px-4">Datum</DataTableHead>
+                            <DataTableHead className="py-4 px-4 text-right">Akcije</DataTableHead>
+                          </DataTableRow>
+                        </DataTableHeader>
+                        <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                           {ostaloDokumenti.map((doc) => (
-                            <tr key={doc.id}>
-                              <td className="py-3 px-4 font-medium text-brand-navy dark:text-white">{doc.naziv_datoteke}</td>
-                              <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                            <DataTableRow key={doc.id}>
+                              <DataTableCell className="py-3 px-4 font-medium text-brand-navy dark:text-white">{doc.naziv_datoteke}</DataTableCell>
+                              <DataTableCell className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                                 {formatirajDatum(doc.created_at)}
-                              </td>
-                              <td className="py-3 px-4">
+                              </DataTableCell>
+                              <DataTableCell className="py-3 px-4">
                                 <div className="flex justify-end gap-2 text-sm">
                                   <a
                                     href={pregledLinkZaDatoteku(doc)}
@@ -983,11 +998,11 @@ export default function PozicijaDetaljiPage() {
                                     Preuzmi
                                   </a>
                                 </div>
-                              </td>
-                            </tr>
+                              </DataTableCell>
+                            </DataTableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </DataTableBody>
+                      </DataTable>
                     </div>
                   )}
                 </div>

@@ -3,6 +3,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Calendar, CircleDollarSign, Clock3, TrendingUp, Users } from 'lucide-react';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTableRow,
+} from '@/components/ui/data-table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface KlijentRef {
   id: string;
@@ -221,18 +230,21 @@ export default function PrihodiPage() {
           <label htmlFor="godina" className="text-sm font-medium text-gray-500 dark:text-gray-300">
             Godina
           </label>
-          <select
-            id="godina"
-            value={odabranaGodina}
-            onChange={(e) => setOdabranaGodina(Number(e.target.value))}
-            className="bg-transparent text-brand-navy dark:text-white font-semibold outline-none"
-          >
-            {opcijeGodina.map((godina) => (
-              <option key={godina} value={godina}>
-                {godina}
-              </option>
-            ))}
-          </select>
+          <Select value={String(odabranaGodina)} onValueChange={(value) => setOdabranaGodina(Number(value))}>
+            <SelectTrigger
+              id="godina"
+              className="w-[110px] bg-transparent border-transparent shadow-none text-brand-navy dark:text-white font-semibold outline-none focus:ring-0 focus:ring-offset-0"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {opcijeGodina.map((godina) => (
+                <SelectItem key={godina} value={String(godina)}>
+                  {godina}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -293,31 +305,31 @@ export default function PrihodiPage() {
               <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">Nema stavki za prikaz.</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/70 dark:bg-[#05182d] text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      <th className="px-5 py-3">Kandidat</th>
-                      <th className="px-5 py-3">Pozicija</th>
-                      <th className="px-5 py-3">Datum</th>
-                      <th className="px-5 py-3 text-right">Iznos</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                <DataTable className="w-full text-left border-collapse">
+                  <DataTableHeader>
+                    <DataTableRow className="bg-gray-50/70 dark:bg-[#05182d] text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      <DataTableHead className="px-5 py-3">Kandidat</DataTableHead>
+                      <DataTableHead className="px-5 py-3">Pozicija</DataTableHead>
+                      <DataTableHead className="px-5 py-3">Datum</DataTableHead>
+                      <DataTableHead className="px-5 py-3 text-right">Iznos</DataTableHead>
+                    </DataTableRow>
+                  </DataTableHeader>
+                  <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {cekajuNaplatuStavke.map((stavka) => (
-                      <tr key={stavka.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5">
-                        <td className="px-5 py-3">
+                      <DataTableRow key={stavka.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5">
+                        <DataTableCell className="px-5 py-3">
                           <p className="font-semibold text-brand-navy dark:text-white">{stavka.imePrezime}</p>
                           <p className="text-xs text-gray-400 dark:text-gray-500">{stavka.klijent}</p>
-                        </td>
-                        <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300">{stavka.pozicija}</td>
-                        <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">{formatirajDatum(stavka.datum)}</td>
-                        <td className="px-5 py-3 text-sm font-semibold text-right text-brand-navy dark:text-white">
+                        </DataTableCell>
+                        <DataTableCell className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300">{stavka.pozicija}</DataTableCell>
+                        <DataTableCell className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">{formatirajDatum(stavka.datum)}</DataTableCell>
+                        <DataTableCell className="px-5 py-3 text-sm font-semibold text-right text-brand-navy dark:text-white">
                           {formatirajEure(stavka.iznos)}
-                        </td>
-                      </tr>
+                        </DataTableCell>
+                      </DataTableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </DataTableBody>
+                </DataTable>
               </div>
             )}
           </div>
@@ -336,31 +348,31 @@ export default function PrihodiPage() {
               <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">Nema otvorenog potencijala.</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/70 dark:bg-[#05182d] text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      <th className="px-5 py-3">Klijent / Pozicija</th>
-                      <th className="px-5 py-3 text-center">Preostalo</th>
-                      <th className="px-5 py-3 text-right">Potencijal</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                <DataTable className="w-full text-left border-collapse">
+                  <DataTableHeader>
+                    <DataTableRow className="bg-gray-50/70 dark:bg-[#05182d] text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      <DataTableHead className="px-5 py-3">Klijent / Pozicija</DataTableHead>
+                      <DataTableHead className="px-5 py-3 text-center">Preostalo</DataTableHead>
+                      <DataTableHead className="px-5 py-3 text-right">Potencijal</DataTableHead>
+                    </DataTableRow>
+                  </DataTableHeader>
+                  <DataTableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {potencijalneStavke.map((stavka) => (
-                      <tr key={stavka.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5">
-                        <td className="px-5 py-3">
+                      <DataTableRow key={stavka.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5">
+                        <DataTableCell className="px-5 py-3">
                           <p className="font-semibold text-brand-navy dark:text-white">{stavka.pozicija}</p>
                           <p className="text-xs text-gray-400 dark:text-gray-500">{stavka.klijent}</p>
-                        </td>
-                        <td className="px-5 py-3 text-center text-sm text-gray-600 dark:text-gray-300">
+                        </DataTableCell>
+                        <DataTableCell className="px-5 py-3 text-center text-sm text-gray-600 dark:text-gray-300">
                           {stavka.preostalo} / {stavka.trazeno}
-                        </td>
-                        <td className="px-5 py-3 text-sm font-semibold text-right text-brand-navy dark:text-white">
+                        </DataTableCell>
+                        <DataTableCell className="px-5 py-3 text-sm font-semibold text-right text-brand-navy dark:text-white">
                           {formatirajEure(stavka.potencijalno)}
-                        </td>
-                      </tr>
+                        </DataTableCell>
+                      </DataTableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </DataTableBody>
+                </DataTable>
               </div>
             )}
           </div>

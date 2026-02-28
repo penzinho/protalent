@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Search, Loader2 } from 'lucide-react';
 import { revalidateCachePaths } from '@/lib/client/revalidateCache';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Props {
   zatvoriModal: () => void;
@@ -100,7 +102,7 @@ export default function DodajKlijentaModal({ zatvoriModal, osvjeziListu }: Props
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Unesite OIB klijenta</label>
-              <input 
+              <Input
                 type="text" 
                 value={oibUnos} 
                 onChange={(e) => setOibUnos(e.target.value)}
@@ -124,24 +126,28 @@ export default function DodajKlijentaModal({ zatvoriModal, osvjeziListu }: Props
           <div className="space-y-4">
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Industrija klijenta</label>
-              <select 
+              <Select
                 value={formData.industrija}
-                onChange={(e) => setFormData({...formData, industrija: e.target.value})}
-                className="w-full px-4 py-2.5 bg-white dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white font-medium"
+                onValueChange={(value) => setFormData({ ...formData, industrija: value })}
               >
-                <option value="Proizvodnja">Proizvodnja</option>
-                <option value="Građevina">Građevina</option>
-                <option value="Ugostiteljstvo">Ugostiteljstvo</option>
-                <option value="Prijevoz">Prijevoz</option>
-                <option value="Logistika">Logistika</option>
-              </select>
+                <SelectTrigger className="w-full px-4 py-2.5 bg-white dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Proizvodnja">Proizvodnja</SelectItem>
+                  <SelectItem value="Građevina">Građevina</SelectItem>
+                  <SelectItem value="Ugostiteljstvo">Ugostiteljstvo</SelectItem>
+                  <SelectItem value="Prijevoz">Prijevoz</SelectItem>
+                  <SelectItem value="Logistika">Logistika</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">
                 Email za ugovore
               </label>
-              <input
+              <Input
                 type="email"
                 placeholder="npr. pravna@tvrtka.hr"
                 value={formData.email_ugovori}
@@ -153,22 +159,22 @@ export default function DodajKlijentaModal({ zatvoriModal, osvjeziListu }: Props
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Skraćeni naziv</label>
-                <input type="text" readOnly value={formData.skraceni_naziv} className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-[#05182d]/50 border border-gray-100 dark:border-gray-800 rounded-xl text-brand-navy dark:text-gray-200 font-medium" />
+                <Input type="text" readOnly value={formData.skraceni_naziv} className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-[#05182d]/50 border border-gray-100 dark:border-gray-800 rounded-xl text-brand-navy dark:text-gray-200 font-medium" />
               </div>
               <div>
                 <label className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1 block">OIB</label>
-                <input type="text" readOnly value={formData.oib} className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-[#05182d]/50 border border-gray-100 dark:border-gray-800 rounded-xl text-brand-navy dark:text-gray-200 font-medium" />
+                <Input type="text" readOnly value={formData.oib} className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-[#05182d]/50 border border-gray-100 dark:border-gray-800 rounded-xl text-brand-navy dark:text-gray-200 font-medium" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Ulica i broj</label>
-                <input type="text" readOnly value={formData.ulica} className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-[#05182d]/50 border border-gray-100 dark:border-gray-800 rounded-xl text-brand-navy dark:text-gray-200 font-medium line-clamp-1" />
+                <Input type="text" readOnly value={formData.ulica} className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-[#05182d]/50 border border-gray-100 dark:border-gray-800 rounded-xl text-brand-navy dark:text-gray-200 font-medium line-clamp-1" />
               </div>
               <div>
                 <label className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Grad</label>
-                <input type="text" readOnly value={formData.grad} className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-[#05182d]/50 border border-gray-100 dark:border-gray-800 rounded-xl text-brand-navy dark:text-gray-200 font-medium" />
+                <Input type="text" readOnly value={formData.grad} className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-[#05182d]/50 border border-gray-100 dark:border-gray-800 rounded-xl text-brand-navy dark:text-gray-200 font-medium" />
               </div>
             </div>
           </div>

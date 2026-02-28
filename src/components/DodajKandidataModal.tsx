@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Loader2 } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
 
 interface Props {
   pozicijaId: string;
@@ -68,7 +70,7 @@ export default function DodajKandidataModal({ pozicijaId, zatvoriModal, osvjeziL
 
           <div>
             <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Ime i prezime</label>
-            <input 
+            <Input
               type="text" 
               placeholder="Npr. Ivan Horvat"
               value={formData.ime_prezime} 
@@ -80,7 +82,7 @@ export default function DodajKandidataModal({ pozicijaId, zatvoriModal, osvjeziL
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Nacionalnost</label>
-              <input 
+              <Input
                 type="text" 
                 placeholder="Npr. Filipini"
                 value={formData.nacionalnost} 
@@ -90,11 +92,9 @@ export default function DodajKandidataModal({ pozicijaId, zatvoriModal, osvjeziL
             </div>
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Datum slanja</label>
-              <input 
-                type="date" 
+              <DatePicker
                 value={formData.datum_slanja} 
-                onChange={(e) => setFormData({...formData, datum_slanja: e.target.value})}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
+                onChange={(value) => setFormData({ ...formData, datum_slanja: value })}
               />
             </div>
           </div>
@@ -102,7 +102,7 @@ export default function DodajKandidataModal({ pozicijaId, zatvoriModal, osvjeziL
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">E-mail</label>
-              <input 
+              <Input
                 type="email" 
                 placeholder="ivan@email.com"
                 value={formData.email} 
@@ -112,7 +112,7 @@ export default function DodajKandidataModal({ pozicijaId, zatvoriModal, osvjeziL
             </div>
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Telefon</label>
-              <input 
+              <Input
                 type="text" 
                 placeholder="+385 91 123 4567"
                 value={formData.telefon} 
