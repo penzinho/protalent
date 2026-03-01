@@ -64,7 +64,7 @@ export async function POST(
       return NextResponse.json({ error: 'Dokument tipa ostalo ne smije imati kandidatId.' }, { status: 400 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: pozicijaData, error: pozicijaError } = await supabase
       .from('pozicije')
       .select('id, klijent_id')

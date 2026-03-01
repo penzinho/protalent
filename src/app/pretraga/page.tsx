@@ -39,7 +39,7 @@ export default async function PretragaPage({ searchParams }: Props) {
   let pozicije: PozicijaRow[] = [];
 
   if (upit.length >= 2) {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
 
     const [klijentiRes, pozicijeRes] = await Promise.all([
       supabase

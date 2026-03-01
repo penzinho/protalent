@@ -105,7 +105,7 @@ export const resolvePotrebaFolderTargets = async (params: {
     throw new Error('Potreban je barem jedan pozicijaId za određivanje foldera.');
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: klijentData, error: klijentError } = await supabase
     .from('klijenti')
     .select('id, naziv_tvrtke')

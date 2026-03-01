@@ -119,7 +119,7 @@ const formatSupabaseError = (error: unknown): string => {
 };
 
 export async function dohvatiKlijenteOverview(): Promise<KlijentiOverviewResult> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('get_klijenti_overview');
 
   if (error) {
@@ -187,7 +187,7 @@ const mapPozicija = (row: Record<string, unknown>): PozicijaDetalji => ({
 });
 
 export async function dohvatiKlijentaDetalje(id: string): Promise<KlijentDetaljiResult> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   let pozicijeRes = (await supabase
     .from('pozicije')

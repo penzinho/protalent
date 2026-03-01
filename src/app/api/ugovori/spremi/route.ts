@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Ne mogu odrediti primarni upload ugovora.' }, { status: 500 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const insertPayload = {
       klijent_id: body.klijentId,
       naziv_datoteke: primaryUpload.name || body.nazivDatoteke,

@@ -14,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: 'id klijenta je obavezan.' }, { status: 400 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from('klijent_aktivnosti')
       .select('id, klijent_id, akcija, opis, user_label, metadata, event_at')

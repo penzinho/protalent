@@ -1,19 +1,34 @@
 import 'server-only';
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export function createSupabaseServerClient(): SupabaseClient {
+export async function createSupabaseServerClient(): Promise<SupabaseClient> {
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('Supabase environment variables are not configured.');
   }
 
-  return createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
+  const cookieStore = await cookies();
+
+  return createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        } catch {
+          // setAll called from Server Component — ignored,
+          // middleware handles cookie refresh.
+        }
+      },
     },
   });
 }

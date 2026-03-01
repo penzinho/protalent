@@ -44,7 +44,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'klijentId je obavezan.' }, { status: 400 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     let filterUgovorIds: string[] | null = null;
     if (pozicijaId) {
       const { data: lokacijeIdData, error: lokacijeIdError } = await supabase

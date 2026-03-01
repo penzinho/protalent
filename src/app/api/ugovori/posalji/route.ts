@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ugovorId je obavezan.' }, { status: 400 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: ugovorData, error: ugovorError } = await supabase
       .from('ugovori_dokumenti')
       .select('id, klijent_id, naziv_datoteke, mime_type, drive_file_id')
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
 
     if (ugovor) {
       try {
-        const supabase = createSupabaseServerClient();
+        const supabase = await createSupabaseServerClient();
         await supabase.from('mail_slanje_log').insert([
           {
             ugovor_id: ugovor.id,

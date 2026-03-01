@@ -87,7 +87,7 @@ const toPublicConfig = (row: AppPostavkeRow): IntegracijePublicConfig => ({
 });
 
 const getRow = async (): Promise<AppPostavkeRow> => {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('app_postavke')
     .select(
@@ -142,7 +142,7 @@ export const updateIntegracijeConfig = async (
 
   updatePayload.updated_at = new Date().toISOString();
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('app_postavke')
     .update(updatePayload)

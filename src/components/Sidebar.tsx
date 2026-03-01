@@ -16,9 +16,12 @@ import {
   ChevronRight,
   Menu,
   X,
+  LogOut,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'hr-sidebar-collapsed';
 
@@ -30,6 +33,7 @@ const navigacija: Array<{ href: string; label: string; icon: LucideIcon }> = [
 ];
 
 export default function Sidebar() {
+  const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [stisnut, setStisnut] = useState(false);
@@ -65,6 +69,12 @@ export default function Sidebar() {
   };
 
   const zatvoriMobile = () => setMobileOtvoren(false);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   const renderLogo = (uski: boolean, mobile = false) => {
     if (!mounted) {
@@ -182,7 +192,7 @@ export default function Sidebar() {
               })}
             </nav>
 
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-4 space-y-2">
               <Link
                 href="/postavke"
                 onClick={zatvoriMobile}
@@ -191,6 +201,13 @@ export default function Sidebar() {
                 <Settings size={20} className="text-brand-yellow group-hover:text-brand-orange transition-colors" />
                 <span className="font-semibold">Postavke</span>
               </Link>
+              <button
+                onClick={handleLogout}
+                className={`${osnovniLinkKlase} gap-3 px-4 w-full text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-300`}
+              >
+                <LogOut size={20} className="text-red-400 group-hover:text-red-500 transition-colors" />
+                <span className="font-semibold">Odjava</span>
+              </button>
             </div>
 
             {mounted && (
@@ -230,7 +247,7 @@ export default function Sidebar() {
         </nav>
 
         <div className="mt-auto">
-          <div className={`${stisnut ? 'px-2' : 'px-4'} pb-3`}>
+          <div className={`${stisnut ? 'px-2' : 'px-4'} pb-1`}>
             <Link
               href="/postavke"
               title="Postavke"
@@ -243,14 +260,22 @@ export default function Sidebar() {
 
           <div className={`${stisnut ? 'px-2' : 'px-4'} pb-3`}>
             <button
+              onClick={handleLogout}
+              title="Odjava"
+              className={`w-full flex items-center py-3 rounded-xl text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-300 transition-all group ${stisnut ? 'justify-center px-2' : 'gap-3 px-4'}`}
+            >
+              <LogOut size={20} className="text-red-400 group-hover:text-red-500 transition-colors" />
+              {!stisnut && <span className="font-semibold">Odjava</span>}
+            </button>
+          </div>
+
+          <div className={`${stisnut ? 'px-2' : 'px-4'} pb-2`}>
+            <button
               onClick={prebaciSidebar}
               title={stisnut ? 'Proširi sidebar' : 'Suzi sidebar'}
-              className={`w-full flex items-center rounded-xl bg-gray-100 dark:bg-[#0b2238] text-gray-500 dark:text-gray-300 hover:text-brand-orange dark:hover:text-brand-yellow transition-colors ${
-                stisnut ? 'justify-center px-2 py-2.5' : 'justify-center gap-2 px-4 py-2.5'
-              }`}
+              className={`w-full flex items-center justify-center py-1.5 text-gray-300 dark:text-gray-600 hover:text-brand-orange dark:hover:text-brand-yellow transition-colors`}
             >
-              {stisnut ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-              {!stisnut && <span className="text-sm font-medium">Sakrij sidebar</span>}
+              {stisnut ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
             </button>
           </div>
 

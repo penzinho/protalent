@@ -26,7 +26,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'id ugovora je obavezan.' }, { status: 400 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: ugovorData, error: ugovorError } = await supabase
       .from('ugovori_dokumenti')
       .select('id, klijent_id, drive_file_id')

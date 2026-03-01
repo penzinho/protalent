@@ -41,7 +41,7 @@ export async function GET(
       return NextResponse.json({ error: 'id potrebe je obavezan.' }, { status: 400 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from('potrebe_dokumenti')
       .select(
