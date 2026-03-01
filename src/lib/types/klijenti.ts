@@ -37,6 +37,7 @@ export interface PozicijaDetalji {
   klijent_id: string;
   naziv_pozicije: string;
   broj_izvrsitelja: number;
+  broj_kandidata: number;
   datum_upisa: string;
   tip_radnika: 'domaci' | 'strani' | 'strani_u_rh';
   nacionalnosti: string[];

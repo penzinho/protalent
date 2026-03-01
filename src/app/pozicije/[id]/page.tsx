@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Users,
@@ -22,6 +22,7 @@ import {
   Send,
 } from 'lucide-react';
 import DodajKandidataModal from '@/components/DodajKandidataModal';
+import EmptyState from '@/components/ui/EmptyState';
 import UrediPozicijuModal from '@/components/UrediPozicijuModal';
 import PosaljiUgovorModal from '@/components/klijenti/PosaljiUgovorModal';
 import { generirajUgovorPdfDatoteka } from '@/lib/pdf/generirajUgovorPdf';
@@ -158,6 +159,8 @@ const preuzmiLinkZaDatoteku = (doc: {
 export default function PozicijaDetaljiPage() {
   const { id } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from');
   const potrebaId = String(id || '');
 
   const [pozicija, setPozicija] = useState<any>(null);
@@ -272,7 +275,9 @@ export default function PozicijaDetaljiPage() {
 
   useEffect(() => {
     if (!potrebaId) return;
+     
     void dohvatiPodatke();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [potrebaId]);
 
   const uploadPotrebaDatoteke = async (params: {
@@ -449,10 +454,11 @@ export default function PozicijaDetaljiPage() {
     <div className="max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <button
-          onClick={() => router.push(`/klijenti/${pozicija.klijent_id}`)}
+          onClick={() => router.back()}
           className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-brand-orange dark:hover:text-brand-yellow transition-colors font-medium"
         >
-          <ArrowLeft size={20} /> Natrag na klijenta ({pozicija.klijenti?.naziv_tvrtke})
+          <ArrowLeft size={20} />
+          {from === 'pretraga' ? 'Natrag na rezultate pretrage' : `Natrag na klijenta (${pozicija.klijenti?.naziv_tvrtke})`}
         </button>
         <div className="flex items-center gap-3">
           <button
@@ -590,11 +596,7 @@ export default function PozicijaDetaljiPage() {
         </div>
 
         {kandidati.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-[#0A2B50] rounded-2xl border border-gray-100 dark:border-gray-800 border-dashed transition-colors">
-            <Users className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <h3 className="text-lg font-medium text-brand-navy dark:text-white">Još nema poslanih kandidata</h3>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Kliknite na gumb iznad i unesite prvog kandidata.</p>
-          </div>
+          <EmptyState icon={Users} title="Još nema poslanih kandidata" description="Kliknite na gumb iznad i unesite prvog kandidata." />
         ) : (
           <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
             <div className="overflow-x-auto overflow-y-visible">

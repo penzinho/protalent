@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Loader2, Calculator } from 'lucide-react';
+import DatePickerInput from '@/components/ui/DatePickerInput';
+import Select from '@/components/ui/Select';
+import { toast } from 'sonner';
 
 interface NacionalnostOpcija {
   id: string;
@@ -103,7 +106,9 @@ export default function UrediPozicijuModal({ pozicija, zatvoriModal, osvjeziPoda
   };
 
   useEffect(() => {
+     
     void dohvatiNacionalnosti();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const izracunajIznosAvansa = () => {
@@ -192,6 +197,7 @@ export default function UrediPozicijuModal({ pozicija, zatvoriModal, osvjeziPoda
 
     if (updateError) {
       setGreska('Greška pri spremanju izmjena potrebe.');
+      toast.error('Greška pri spremanju izmjena.');
       setSpremanje(false);
       return;
     }
@@ -203,6 +209,7 @@ export default function UrediPozicijuModal({ pozicija, zatvoriModal, osvjeziPoda
 
     if (deleteRelError && !jeNedostupnaRelacijaNacionalnosti(deleteRelError)) {
       setGreska('Detalji su spremljeni, ali nije moguće ažurirati nacionalnosti.');
+      toast.error('Nacionalnosti nisu uspješno ažurirane.');
       setSpremanje(false);
       return;
     }
@@ -218,11 +225,13 @@ export default function UrediPozicijuModal({ pozicija, zatvoriModal, osvjeziPoda
 
       if (insertRelError && !jeNedostupnaRelacijaNacionalnosti(insertRelError)) {
         setGreska('Detalji su spremljeni, ali nije moguće ažurirati nacionalnosti.');
+        toast.error('Nacionalnosti nisu uspješno ažurirane.');
         setSpremanje(false);
         return;
       }
     }
 
+    toast.success('Potreba uspješno ažurirana');
     osvjeziPodatke();
     zatvoriModal();
   };
@@ -265,15 +274,12 @@ export default function UrediPozicijuModal({ pozicija, zatvoriModal, osvjeziPoda
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
               />
             </div>
-            <div>
-              <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Datum upisa</label>
-              <input
-                type="date"
-                value={formData.datum_upisa}
-                onChange={(e) => setFormData({ ...formData, datum_upisa: e.target.value })}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
-              />
-            </div>
+            <DatePickerInput
+              label="Datum upisa"
+              value={formData.datum_upisa}
+              onChange={(val) => setFormData({ ...formData, datum_upisa: val })}
+              align="right"
+            />
           </div>
 
           <div>
@@ -286,24 +292,20 @@ export default function UrediPozicijuModal({ pozicija, zatvoriModal, osvjeziPoda
             />
           </div>
 
-          <div>
-            <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Tip radnika</label>
-            <select
-              value={formData.tip_radnika}
-              onChange={(e) => {
-                const noviTip = e.target.value as (typeof TIPOVI_RADNIKA)[number];
-                setFormData({ ...formData, tip_radnika: noviTip });
-                if (noviTip === 'domaci') {
-                  setOdabraneNacionalnosti([]);
-                }
-              }}
-              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
-            >
-              <option value="domaci">Domaći</option>
-              <option value="strani">Strani</option>
-              <option value="strani_u_rh">Strani radnici u RH</option>
-            </select>
-          </div>
+          <Select
+            label="Tip radnika"
+            value={formData.tip_radnika}
+            onChange={(v) => {
+              const noviTip = v as (typeof TIPOVI_RADNIKA)[number];
+              setFormData({ ...formData, tip_radnika: noviTip });
+              if (noviTip === 'domaci') setOdabraneNacionalnosti([]);
+            }}
+            options={[
+              { value: 'domaci', label: 'Domaći' },
+              { value: 'strani', label: 'Strani' },
+              { value: 'strani_u_rh', label: 'Strani radnici u RH' },
+            ]}
+          />
 
           {trebaNacionalnosti && (
             <div className="space-y-3 p-4 bg-gray-50 dark:bg-[#05182d] rounded-xl border border-gray-200 dark:border-gray-700">

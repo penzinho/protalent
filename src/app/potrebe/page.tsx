@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { Briefcase, Building2, Users, ArrowRight } from 'lucide-react';
 import PotrebePregledTablica from '@/components/potrebe/PotrebePregledTablica';
+import EmptyState from '@/components/ui/EmptyState';
 import PotrebePoNacionalnostima from '@/components/potrebe/PotrebePoNacionalnostima';
 import type {
   GrupiranaPotrebaRow,
@@ -333,10 +334,7 @@ export default function PotrebePage() {
       {ucitavanje ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">Učitavanje potreba...</div>
       ) : grupiranePotrebe.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#0A2B50] rounded-2xl border border-gray-100 dark:border-gray-800 border-dashed">
-          <Briefcase className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-lg font-medium text-brand-navy dark:text-white">Trenutno nema upisanih potreba</h3>
-        </div>
+        <EmptyState icon={Briefcase} title="Trenutno nema upisanih potreba" />
       ) : (
         <div className="space-y-6">
           <PotrebePregledTablica

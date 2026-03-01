@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Building2, Plus, Search } from 'lucide-react';
 import DodajKlijentaModal from '@/components/DodajKlijentaModal';
+import EmptyState from '@/components/ui/EmptyState';
 import type { KlijentOverview } from '@/lib/types/klijenti';
 
 interface Props {
@@ -70,11 +71,11 @@ export default function KlijentiClientView({ initialKlijenti, greska = null }: P
       </div>
 
       {filtriraniKlijenti.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#0A2B50] rounded-2xl border border-gray-100 dark:border-gray-800 border-dashed">
-          <Building2 className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-lg font-medium text-brand-navy dark:text-white">Nema pronađenih klijenata</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Pokusajte promijeniti pretragu ili dodajte novog klijenta.</p>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title="Nema pronađenih klijenata"
+          description="Pokušajte promijeniti pretragu ili dodajte novog klijenta."
+        />
       ) : (
         <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
           <div className="overflow-x-auto">

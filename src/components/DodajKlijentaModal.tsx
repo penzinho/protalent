@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Search, Loader2 } from 'lucide-react';
 import { revalidateCachePaths } from '@/lib/client/revalidateCache';
+import Select from '@/components/ui/Select';
+import { toast } from 'sonner';
 
 interface Props {
   zatvoriModal: () => void;
@@ -65,12 +67,14 @@ export default function DodajKlijentaModal({ zatvoriModal, osvjeziListu }: Props
     const { error } = await supabase.from('klijenti').insert([formData]);
     if (error) {
       setGreska('Greška pri spremanju. Možda klijent već postoji.');
+      toast.error('Greška pri spremanju klijenta.');
       setSpremanje(false);
     } else {
       const revalidated = await revalidateCachePaths(['/klijenti']);
       if (!revalidated) {
         console.error('Klijent spremljen, ali revalidate cachea nije uspio za /klijenti.');
       }
+      toast.success('Klijent uspješno dodan');
       osvjeziListu();
       zatvoriModal();
     }
@@ -122,20 +126,18 @@ export default function DodajKlijentaModal({ zatvoriModal, osvjeziListu }: Props
           <div className="h-px w-full bg-gray-100 dark:bg-gray-800 my-2"></div>
 
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Industrija klijenta</label>
-              <select 
-                value={formData.industrija}
-                onChange={(e) => setFormData({...formData, industrija: e.target.value})}
-                className="w-full px-4 py-2.5 bg-white dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white font-medium"
-              >
-                <option value="Proizvodnja">Proizvodnja</option>
-                <option value="Građevina">Građevina</option>
-                <option value="Ugostiteljstvo">Ugostiteljstvo</option>
-                <option value="Prijevoz">Prijevoz</option>
-                <option value="Logistika">Logistika</option>
-              </select>
-            </div>
+            <Select
+              label="Industrija klijenta"
+              value={formData.industrija}
+              onChange={(v) => setFormData({ ...formData, industrija: v })}
+              options={[
+                { value: 'Proizvodnja', label: 'Proizvodnja' },
+                { value: 'Građevina', label: 'Građevina' },
+                { value: 'Ugostiteljstvo', label: 'Ugostiteljstvo' },
+                { value: 'Prijevoz', label: 'Prijevoz' },
+                { value: 'Logistika', label: 'Logistika' },
+              ]}
+            />
 
             <div>
               <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">

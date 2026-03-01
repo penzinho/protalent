@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Loader2, Calculator } from 'lucide-react';
 import { revalidateCachePaths } from '@/lib/client/revalidateCache';
+import DatePickerInput from '@/components/ui/DatePickerInput';
+import Select from '@/components/ui/Select';
+import { toast } from 'sonner';
 
 interface Props {
   klijentId: string;
@@ -53,7 +56,14 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
   };
 
   useEffect(() => {
-    void dohvatiNacionalnosti();
+    supabase
+      .from('nacionalnosti_radnika')
+      .select('id, naziv')
+      .order('naziv', { ascending: true })
+      .then(({ data, error }) => {
+        if (!error) setNacionalnostiOpcije((data || []) as NacionalnostOpcija[]);
+        else console.error('Greška pri dohvaćanju nacionalnosti:', error);
+      });
   }, []);
 
   // Funkcija za automatski izračun avansa u eurima
@@ -146,6 +156,7 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
 
     if (error || !novaPozicija?.id) {
       setGreska('Greška pri spremanju pozicije.');
+      toast.error('Greška pri spremanju pozicije.');
       setSpremanje(false);
       return;
     }
@@ -161,6 +172,7 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
 
       if (povezivanjeGreska) {
         setGreska('Pozicija je spremljena, ali nacionalnosti nisu uspješno povezane.');
+        toast.error('Nacionalnosti nisu uspješno povezane.');
         setSpremanje(false);
         return;
       }
@@ -170,13 +182,14 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
     if (!revalidated) {
       console.error(`Pozicija spremljena, ali revalidate cachea nije uspio za klijenta ${klijentId}.`);
     }
+    toast.success('Potreba uspješno dodana');
     osvjeziListu();
     zatvoriModal();
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#0A2B50] rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
+      <div className="bg-white dark:bg-[#0A2B50] rounded-2xl w-full max-w-xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
         
         <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-xl font-bold text-brand-navy dark:text-white">Nova potreba</h2>
@@ -214,15 +227,12 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
               />
             </div>
-            <div>
-              <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Datum upisa</label>
-              <input 
-                type="date" 
-                value={formData.datum_upisa} 
-                onChange={(e) => setFormData({...formData, datum_upisa: e.target.value})}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
-              />
-            </div>
+            <DatePickerInput
+              label="Datum upisa"
+              value={formData.datum_upisa}
+              onChange={(val) => setFormData({ ...formData, datum_upisa: val })}
+              align="right"
+            />
           </div>
 
           <div>
@@ -236,28 +246,20 @@ export default function DodajPozicijuModal({ klijentId, zatvoriModal, osvjeziLis
             />
           </div>
 
-          <div>
-            <label className="text-sm font-semibold text-brand-navy dark:text-gray-300 mb-1 block">Tip radnika</label>
-            <select
-              value={formData.tip_radnika}
-              onChange={(e) => {
-                const noviTip = e.target.value as (typeof TIPOVI_RADNIKA)[number];
-                setFormData({
-                  ...formData,
-                  tip_radnika: noviTip,
-                });
-                if (noviTip === 'domaci') {
-                  setOdabraneNacionalnosti([]);
-                }
-              }}
-              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#05182d] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none transition-all dark:text-white"
-              required
-            >
-              <option value="domaci">Domaći</option>
-              <option value="strani">Strani</option>
-              <option value="strani_u_rh">Strani radnici u RH</option>
-            </select>
-          </div>
+          <Select
+            label="Tip radnika"
+            value={formData.tip_radnika}
+            onChange={(v) => {
+              const noviTip = v as (typeof TIPOVI_RADNIKA)[number];
+              setFormData({ ...formData, tip_radnika: noviTip });
+              if (noviTip === 'domaci') setOdabraneNacionalnosti([]);
+            }}
+            options={[
+              { value: 'domaci', label: 'Domaći' },
+              { value: 'strani', label: 'Strani' },
+              { value: 'strani_u_rh', label: 'Strani radnici u RH' },
+            ]}
+          />
 
           {trebaNacionalnosti && (
             <div className="space-y-3 p-4 bg-gray-50 dark:bg-[#05182d] rounded-xl border border-gray-200 dark:border-gray-700">

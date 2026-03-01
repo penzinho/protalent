@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Building2, LayoutGrid, List, Users, Euro } from 'lucide-react';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface KlijentRef {
   id: string;
@@ -208,10 +209,10 @@ export default function PotrebaDetaljiPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <button
-        onClick={() => router.push(statusFilter === 'Zatvoreno' ? '/potrebe/zatvorene' : '/potrebe')}
+        onClick={() => router.back()}
         className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-brand-orange dark:hover:text-brand-yellow transition-colors font-medium"
       >
-        <ArrowLeft size={20} /> Natrag na {statusFilter === 'Zatvoreno' ? 'zatvorene' : 'otvorene'} potrebe
+        <ArrowLeft size={20} /> Natrag
       </button>
 
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -292,9 +293,7 @@ export default function PotrebaDetaljiPage() {
       {ucitavanje ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">Učitavanje detalja potrebe...</div>
       ) : grupiranoPoKlijentu.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#0A2B50] rounded-2xl border border-gray-100 dark:border-gray-800 border-dashed">
-          <h3 className="text-lg font-medium text-brand-navy dark:text-white">Nema zapisa za ovu potrebu</h3>
-        </div>
+        <EmptyState title="Nema zapisa za ovu potrebu" />
       ) : prikaz === 'cards' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {grupiranoPoKlijentu.map((stavka) => (

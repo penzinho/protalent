@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import Sidebar from '@/components/Sidebar';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { Toaster } from 'sonner';
+import GlobalSearch from '@/components/GlobalSearch';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,10 +25,16 @@ export default function RootLayout({
         <ThemeProvider>
           <div className="flex min-h-screen flex-col md:flex-row md:h-screen md:overflow-hidden">
             <Sidebar />
-            <main className="flex-1 p-4 sm:p-6 md:p-8 md:h-screen md:overflow-y-auto">
-              {children}
-            </main>
+            <div className="flex-1 flex flex-col md:h-screen md:overflow-hidden">
+              <header className="shrink-0 bg-white dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 md:px-8 py-3 flex items-center justify-center transition-colors">
+                <GlobalSearch />
+              </header>
+              <main className="flex-1 p-4 sm:p-6 md:p-8 md:overflow-y-auto">
+                {children}
+              </main>
+            </div>
           </div>
+          <Toaster position="bottom-right" richColors theme="system" />
         </ThemeProvider>
       </body>
     </html>

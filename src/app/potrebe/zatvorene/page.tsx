@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { Briefcase, Building2, Users, ArrowRight, ArrowLeft } from 'lucide-react';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface KlijentRef {
   id: string;
@@ -187,10 +188,7 @@ export default function ZatvorenePotrebePage() {
       {ucitavanje ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">Učitavanje zatvorenih potreba...</div>
       ) : grupiranePotrebe.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#0A2B50] rounded-2xl border border-gray-100 dark:border-gray-800 border-dashed">
-          <Briefcase className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-lg font-medium text-brand-navy dark:text-white">Trenutno nema zatvorenih potreba</h3>
-        </div>
+        <EmptyState icon={Briefcase} title="Trenutno nema zatvorenih potreba" />
       ) : (
         <div className="bg-white dark:bg-[#0A2B50] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
           <div className="overflow-x-auto">

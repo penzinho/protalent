@@ -3,13 +3,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Building2, MapPin, Briefcase, Plus, ArrowLeft, Calendar, Euro, Percent, Users, LayoutGrid, List, FileText, Globe, Send, History, Trash2, Download, ChevronDown, ChevronRight } from 'lucide-react';
+import { Building2, MapPin, Briefcase, Plus, ArrowLeft, Calendar, Euro, Percent, Users, LayoutGrid, List, FileText, Globe, Send, History, Trash2, Download, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import DodajPozicijuModal from '@/components/DodajPozicijuModal';
 import Link from 'next/link';
 import { generirajUgovorPdfDatoteka } from '@/lib/pdf/generirajUgovorPdf';
 import type { KlijentAktivnost, KlijentDetalji, PozicijaDetalji, UgovorDokument } from '@/lib/types/klijenti';
 import { revalidateCachePaths } from '@/lib/client/revalidateCache';
 import PosaljiUgovorModal from '@/components/klijenti/PosaljiUgovorModal';
+import UrediKlijentaModal from '@/components/klijenti/UrediKlijentaModal';
+import ProgressBar from '@/components/ui/ProgressBar';
+import EmptyState from '@/components/ui/EmptyState';
 
 // Pomoćna funkcija za striktni HR format datuma
 const formatirajDatum = (datumString: string) => {
@@ -91,6 +94,7 @@ interface Props {
   initialKlijent: KlijentDetalji | null;
   initialPozicije: PozicijaDetalji[];
   greska?: string | null;
+  from?: string;
 }
 
 export default function KlijentDetaljiClientView({
@@ -98,6 +102,7 @@ export default function KlijentDetaljiClientView({
   initialKlijent,
   initialPozicije,
   greska = null,
+  from,
 }: Props) {
   const router = useRouter();
   
@@ -110,6 +115,7 @@ export default function KlijentDetaljiClientView({
   const [ucitavanjeUgovora, setUcitavanjeUgovora] = useState(false);
   const [brisanjeUgovoraId, setBrisanjeUgovoraId] = useState<string | null>(null);
   const [modalPosaljiOtvoren, setModalPosaljiOtvoren] = useState(false);
+  const [modalUrediOtvoren, setModalUrediOtvoren] = useState(false);
   const [odabraniUgovorZaSlanje, setOdabraniUgovorZaSlanje] = useState<string | null>(null);
   const [aktivnosti, setAktivnosti] = useState<KlijentAktivnost[]>([]);
   const [ucitavanjeAktivnosti, setUcitavanjeAktivnosti] = useState(false);
@@ -172,8 +178,11 @@ export default function KlijentDetaljiClientView({
   };
 
   useEffect(() => {
+     
     void dohvatiUgovore();
+     
     void dohvatiAktivnosti();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const obrisiUgovor = async (ugovorId: string) => {
@@ -401,6 +410,11 @@ export default function KlijentDetaljiClientView({
                 </div>
               )}
             </div>
+            <ProgressBar
+              current={pozicija.broj_kandidata}
+              total={pozicija.broj_izvrsitelja}
+              className="mb-4"
+            />
             <Link
               href={`/pozicije/${pozicija.id}`}
               className="w-full flex justify-center py-2.5 bg-gray-50 dark:bg-[#05182d] hover:bg-gray-100 dark:hover:bg-[#07213E] text-brand-navy dark:text-white font-medium rounded-xl transition-colors border border-gray-100 dark:border-gray-700"
@@ -419,16 +433,16 @@ export default function KlijentDetaljiClientView({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50/50 dark:bg-[#05182d] border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-              <th className="py-4 px-6 w-10"></th>
-              <th className="py-4 px-6">Radno mjesto</th>
-              <th className="py-4 px-6">Status</th>
-              <th className="py-4 px-6">Tip radnika</th>
-              <th className="py-4 px-6">Nacionalnosti</th>
-              <th className="py-4 px-6 text-center">Broj radnika</th>
-              <th className="py-4 px-6">Cijena</th>
-              <th className="py-4 px-6">Avans</th>
-              <th className="py-4 px-6">Datum upisa</th>
-              <th className="py-4 px-6 text-right">Akcije</th>
+              <th className="py-3 px-4 w-10"></th>
+              <th className="py-3 px-4">Radno mjesto</th>
+              <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4">Tip radnika</th>
+              <th className="py-3 px-4">Nacionalnosti</th>
+              <th className="py-3 px-4 min-w-[130px]">Popunjenost</th>
+              <th className="py-3 px-4">Cijena</th>
+              <th className="py-3 px-4">Avans</th>
+              <th className="py-3 px-4">Datum</th>
+              <th className="py-3 px-4 text-right">Akcije</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -439,10 +453,10 @@ export default function KlijentDetaljiClientView({
 
               return (
                 <tr key={pozicija.id} className={`hover:bg-gray-50/40 dark:hover:bg-white/5 transition-colors group ${jeOdabrana ? 'bg-blue-50/30 dark:bg-yellow-900/10' : ''}`}>
-                  
-                  <td className="py-4 px-6">
-                    <input 
-                      type="checkbox" 
+
+                  <td className="py-3 px-4">
+                    <input
+                      type="checkbox"
                       checked={jeOdabrana}
                       onChange={() => togglePozicija(pozicija.id)}
                       className="w-4 h-4 rounded border-gray-300 text-brand-navy focus:ring-brand-navy cursor-pointer"
@@ -450,51 +464,53 @@ export default function KlijentDetaljiClientView({
                     />
                   </td>
 
-                  <td className="py-4 px-6 font-semibold">
+                  <td className="py-3 px-4 font-semibold">
                     <Link
                       href={`/pozicije/${pozicija.id}`}
-                      className="text-brand-navy dark:text-white hover:text-brand-yellow transition-colors"
+                      className="text-brand-navy dark:text-white hover:text-brand-yellow transition-colors text-sm"
                     >
                       {pozicija.naziv_pozicije}
                     </Link>
                   </td>
-                  <td className="py-4 px-6">
+                  <td className="py-3 px-4">
                     <select
                       value={statusPotrebe}
                       onChange={(e) => promijeniStatusPotrebe(pozicija.id, e.target.value as 'Otvoreno' | 'Zatvoreno')}
-                      className={`appearance-none cursor-pointer outline-none font-bold text-xs uppercase tracking-wide rounded-full px-4 py-1.5 border transition-all ${dobijBojuStatusaPotrebe(statusPotrebe)}`}
+                      className={`appearance-none cursor-pointer outline-none font-bold text-xs uppercase tracking-wide rounded-full px-3 py-1 border transition-all ${dobijBojuStatusaPotrebe(statusPotrebe)}`}
                     >
                       <option value="Otvoreno">Otvoreno</option>
                       <option value="Zatvoreno">Zatvoreno</option>
                     </select>
                   </td>
-                  <td className="py-4 px-6 text-gray-600 dark:text-gray-300 font-medium">
+                  <td className="py-3 px-4 text-gray-600 dark:text-gray-300 text-sm">
                     {formatirajTipRadnika(pozicija.tip_radnika)}
                   </td>
-                  <td className="py-4 px-6 text-gray-600 dark:text-gray-300 text-sm">
+                  <td className="py-3 px-4 text-gray-600 dark:text-gray-300 text-sm">
                     {formatirajNacionalnosti(pozicija.nacionalnosti)}
                   </td>
-                  <td className="py-4 px-6 text-center">
-                    <span className="text-gray-600 dark:text-gray-300 font-semibold bg-gray-100 dark:bg-[#05182d] border border-transparent dark:border-gray-700 px-3 py-1 rounded-lg">
-                      {pozicija.broj_izvrsitelja}
-                    </span>
+                  <td className="py-3 px-4">
+                    <ProgressBar
+                      current={pozicija.broj_kandidata}
+                      total={pozicija.broj_izvrsitelja}
+                      compact
+                    />
                   </td>
-                  <td className="py-4 px-6 text-brand-navy dark:text-gray-200 font-medium">
+                  <td className="py-3 px-4 text-brand-navy dark:text-gray-200 text-sm font-medium">
                     {pozicija.cijena_po_kandidatu} €
                   </td>
-                  <td className="py-4 px-6">
+                  <td className="py-3 px-4">
                     {pozicija.avans_dogovoren ? (
-                      <span className="text-brand-orange font-medium">
-                        {avansPostotak}% <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">({((pozicija.cijena_po_kandidatu * avansPostotak) / 100).toFixed(2)}€)</span>
+                      <span className="text-brand-orange text-sm font-medium">
+                        {avansPostotak}%
                       </span>
                     ) : (
                       <span className="text-gray-400 dark:text-gray-600">-</span>
                     )}
                   </td>
-                  <td className="py-4 px-6 text-gray-600 dark:text-gray-400 text-sm">
+                  <td className="py-3 px-4 text-gray-600 dark:text-gray-400 text-sm">
                     {formatirajDatum(pozicija.datum_upisa)}
                   </td>
-                  <td className="py-4 px-6 text-right">
+                  <td className="py-3 px-4 text-right">
                     <Link
                       href={`/pozicije/${pozicija.id}`}
                       className="text-brand-yellow hover:text-brand-orange font-medium text-sm transition-colors"
@@ -531,8 +547,12 @@ export default function KlijentDetaljiClientView({
       )}
       
       {/* Navigacija unatrag */}
-      <button onClick={() => router.push('/klijenti')} className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-brand-orange dark:hover:text-brand-yellow transition-colors font-medium">
-        <ArrowLeft size={20} /> Natrag na popis klijenata
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-brand-orange dark:hover:text-brand-yellow transition-colors font-medium"
+      >
+        <ArrowLeft size={20} />
+        {from === 'pretraga' ? 'Natrag na rezultate pretrage' : 'Natrag na popis klijenata'}
       </button>
 
       {/* SEKCIJA 1: Podaci o klijentu */}
@@ -542,9 +562,19 @@ export default function KlijentDetaljiClientView({
             <h1 className="text-3xl font-bold text-brand-navy dark:text-white">{klijent.naziv_tvrtke}</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1 text-lg">{klijent.skraceni_naziv}</p>
           </div>
-          <span className="px-4 py-2 bg-brand-navy/5 dark:bg-brand-yellow/10 text-brand-navy dark:text-brand-yellow font-semibold rounded-xl border border-brand-navy/10 dark:border-brand-yellow/20">
-            {klijent.industrija || 'Industrija nepoznata'}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="px-4 py-2 bg-brand-navy/5 dark:bg-brand-yellow/10 text-brand-navy dark:text-brand-yellow font-semibold rounded-xl border border-brand-navy/10 dark:border-brand-yellow/20">
+              {klijent.industrija || 'Industrija nepoznata'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setModalUrediOtvoren(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#05182d] text-brand-navy dark:text-gray-200 hover:border-brand-yellow dark:hover:border-brand-yellow hover:text-brand-orange dark:hover:text-brand-yellow transition-colors font-medium text-sm"
+            >
+              <Pencil size={15} />
+              Uredi
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-100 dark:border-gray-800">
@@ -649,11 +679,12 @@ export default function KlijentDetaljiClientView({
         </div>
 
         {pozicije.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-[#0A2B50] rounded-2xl border border-gray-100 dark:border-gray-800 border-dashed transition-colors">
-            <Briefcase className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <h3 className="text-lg font-medium text-brand-navy dark:text-white">Trenutno nema potreba</h3>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Kliknite na gumb iznad kako biste dodali prvo radno mjesto.</p>
-          </div>
+          <EmptyState
+            icon={Briefcase}
+            title="Trenutno nema potreba"
+            description="Kliknite na gumb iznad kako biste dodali prvo radno mjesto."
+            action={{ label: 'Dodaj potrebu', onClick: () => setModalOtvoren(true) }}
+          />
         ) : prikaz === 'cards' ? (
           <div className="space-y-10">
             <div>
@@ -661,9 +692,7 @@ export default function KlijentDetaljiClientView({
               {otvorenePozicije.length > 0 ? (
                 renderPotrebeKartice(otvorenePozicije)
               ) : (
-                <div className="text-center py-10 bg-white dark:bg-[#0A2B50] rounded-2xl border border-gray-100 dark:border-gray-800 border-dashed transition-colors">
-                  <p className="text-gray-500 dark:text-gray-400">Trenutno nema otvorenih potreba.</p>
-                </div>
+                <EmptyState title="Trenutno nema otvorenih potreba." compact />
               )}
             </div>
 
@@ -681,9 +710,7 @@ export default function KlijentDetaljiClientView({
               {otvorenePozicije.length > 0 ? (
                 renderPotrebeTablica(otvorenePozicije)
               ) : (
-                <div className="text-center py-10 bg-white dark:bg-[#0A2B50] rounded-2xl border border-gray-100 dark:border-gray-800 border-dashed transition-colors">
-                  <p className="text-gray-500 dark:text-gray-400">Trenutno nema otvorenih potreba.</p>
-                </div>
+                <EmptyState title="Trenutno nema otvorenih potreba." compact />
               )}
             </div>
 
@@ -712,7 +739,7 @@ export default function KlijentDetaljiClientView({
               setModalPosaljiOtvoren(true);
             }}
             disabled={ugovori.length === 0}
-            className="flex items-center gap-2 bg-brand-navy hover:bg-[#07213E] dark:bg-brand-yellow dark:hover:bg-yellow-500 text-white dark:text-brand-navy px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 bg-brand-orange hover:bg-brand-yellow text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm disabled:opacity-50"
           >
             <Send size={18} /> Pošalji ugovor
           </button>
@@ -873,10 +900,18 @@ export default function KlijentDetaljiClientView({
       </div>
 
       {modalOtvoren && (
-        <DodajPozicijuModal 
+        <DodajPozicijuModal
           klijentId={id}
-          zatvoriModal={() => setModalOtvoren(false)} 
-          osvjeziListu={osvjeziNakonPromjenePotreba} 
+          zatvoriModal={() => setModalOtvoren(false)}
+          osvjeziListu={osvjeziNakonPromjenePotreba}
+        />
+      )}
+
+      {modalUrediOtvoren && klijent && (
+        <UrediKlijentaModal
+          klijent={klijent}
+          zatvoriModal={() => setModalUrediOtvoren(false)}
+          onSpremljeno={() => router.refresh()}
         />
       )}
       <PosaljiUgovorModal

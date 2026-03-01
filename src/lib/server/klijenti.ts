@@ -29,11 +29,11 @@ const RPC_ERROR_MESSAGE =
 const DETAILS_ERROR_MESSAGE =
   'Trenutno nije moguce dohvatiti podatke o klijentu. Pokusajte ponovno za nekoliko trenutaka.';
 const SELECT_POZICIJE_SA_SVIM_NACIONALNOSTIMA =
-  'id, klijent_id, naziv_pozicije, broj_izvrsitelja, datum_upisa, tip_radnika, cijena_po_kandidatu, avans_dogovoren, avans_postotak, status, pozicije_nacionalnosti(nacionalnosti_radnika(naziv))';
+  'id, klijent_id, naziv_pozicije, broj_izvrsitelja, datum_upisa, tip_radnika, cijena_po_kandidatu, avans_dogovoren, avans_postotak, status, pozicije_nacionalnosti(nacionalnosti_radnika(naziv)), kandidati(count)';
 const SELECT_POZICIJE_WITH_TIP_RADNIKA =
-  'id, klijent_id, naziv_pozicije, broj_izvrsitelja, datum_upisa, tip_radnika, cijena_po_kandidatu, avans_dogovoren, avans_postotak, status';
+  'id, klijent_id, naziv_pozicije, broj_izvrsitelja, datum_upisa, tip_radnika, cijena_po_kandidatu, avans_dogovoren, avans_postotak, status, kandidati(count)';
 const SELECT_POZICIJE_BEZ_TIPA_RADNIKA =
-  'id, klijent_id, naziv_pozicije, broj_izvrsitelja, datum_upisa, cijena_po_kandidatu, avans_dogovoren, avans_postotak, status';
+  'id, klijent_id, naziv_pozicije, broj_izvrsitelja, datum_upisa, cijena_po_kandidatu, avans_dogovoren, avans_postotak, status, kandidati(count)';
 const SELECT_KLIJENT_SA_EMAILOM =
   'id, naziv_tvrtke, skraceni_naziv, industrija, oib, mbs, ulica, grad, email_ugovori';
 const SELECT_KLIJENT_BEZ_EMAILA =
@@ -162,11 +162,18 @@ const parseNacionalnosti = (value: unknown): string[] => {
   return Array.from(new Set(mapped));
 };
 
+const parseKandidatiCount = (value: unknown): number => {
+  if (!Array.isArray(value) || value.length === 0) return 0;
+  const first = value[0] as { count?: unknown };
+  return parseCount(first.count as number | string | null);
+};
+
 const mapPozicija = (row: Record<string, unknown>): PozicijaDetalji => ({
   id: String(row.id ?? ''),
   klijent_id: String(row.klijent_id ?? ''),
   naziv_pozicije: String(row.naziv_pozicije ?? ''),
   broj_izvrsitelja: parseCount((row.broj_izvrsitelja as number | string | null) ?? 0),
+  broj_kandidata: parseKandidatiCount(row.kandidati),
   datum_upisa: String(row.datum_upisa ?? ''),
   tip_radnika: parseTipRadnika(row.tip_radnika),
   nacionalnosti: parseNacionalnosti(row.pozicije_nacionalnosti),

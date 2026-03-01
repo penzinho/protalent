@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Calendar, CircleDollarSign, Clock3, TrendingUp, Users } from 'lucide-react';
+import { CircleDollarSign, Clock3, TrendingUp, Users } from 'lucide-react';
+import Select from '@/components/ui/Select';
 
 interface KlijentRef {
   id: string;
@@ -216,23 +217,13 @@ export default function PrihodiPage() {
           <p className="text-gray-500 dark:text-gray-400 mt-1">Dashboard naplate i potencijala po godini</p>
         </div>
 
-        <div className="flex items-center gap-2 bg-white dark:bg-[#0A2B50] border border-gray-100 dark:border-gray-800 rounded-xl px-3 py-2">
-          <Calendar size={18} className="text-brand-yellow" />
-          <label htmlFor="godina" className="text-sm font-medium text-gray-500 dark:text-gray-300">
-            Godina
-          </label>
-          <select
-            id="godina"
-            value={odabranaGodina}
-            onChange={(e) => setOdabranaGodina(Number(e.target.value))}
-            className="bg-transparent text-brand-navy dark:text-white font-semibold outline-none"
-          >
-            {opcijeGodina.map((godina) => (
-              <option key={godina} value={godina}>
-                {godina}
-              </option>
-            ))}
-          </select>
+        <div className="w-full md:w-40">
+          <Select
+            label="Godina"
+            value={String(odabranaGodina)}
+            onChange={(v) => setOdabranaGodina(Number(v))}
+            options={opcijeGodina.map((g) => ({ value: String(g), label: String(g) }))}
+          />
         </div>
       </div>
 
